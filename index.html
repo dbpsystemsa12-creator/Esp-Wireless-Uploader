@@ -3,544 +3,1589 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DBP Cloud IoT Console - Enterprise Edition</title>
+    <title>DBP Esp Uploader - Enterprise Master Console</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        /* =========================================
-           1. CSS VARIABLES & THEME
-           ========================================= */
-        :root {
-            --bg-gradient: linear-gradient(345deg, #000000, #06032b);
-            --panel-bg: rgba(20, 24, 39, 0.4);
-            --panel-border: rgba(255, 255, 255, 0.1);
-            --neon-cyan: #00f2fe;
-            --neon-purple: #bc13fe;
-            --neon-green: #0cf3a2;
-            --neon-red: #ff3366;
-            --text-main: #ffffff;
-            --text-muted: #8b9bb4;
-            --font-main: 'SF Pro Display', system-ui, -apple-system, sans-serif;
-            --font-mono: 'Fira Code', 'Consolas', monospace;
+        /* ==========================================================================
+           1. CORE CSS VARIABLES & GLOBAL STYLES
+           ========================================================================== */
+        :root { 
+            --bg-gradient: linear-gradient(135deg, #050505 0%, #0a0a2a 100%); 
+            --panel-bg: rgba(15, 18, 25, 0.6); 
+            --panel-border: rgba(0, 242, 254, 0.15); 
+            --neon-cyan: #00f2fe; 
+            --neon-purple: #bc13fe; 
+            --neon-green: #0cf3a2; 
+            --neon-red: #ff3366; 
+            --neon-yellow: #f1c40f;
+            --text-main: #ffffff; 
+            --text-muted: #8b9bb4; 
+            --font-main: 'SF Pro Display', system-ui, sans-serif; 
+            --font-mono: 'Fira Code', 'Consolas', monospace; 
         }
-
-        * { box-sizing: border-box; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        body {
-            background: var(--bg-gradient); background-attachment: fixed;
-            color: var(--text-main); font-family: var(--font-main);
-            margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
-
-        /* =========================================
-           2. AUTH & LOCK SCREEN
-           ========================================= */
-        #lockScreen {
-            position: fixed; inset: 0; background: var(--bg-gradient);
-            z-index: 9999; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; backdrop-filter: blur(20px);
-        }
-        .lock-box {
-            background: var(--panel-bg); border: 1px solid var(--panel-border);
-            padding: 50px; border-radius: 24px; text-align: center; width: 420px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-        }
-        .lock-box h2 { color: var(--neon-cyan); margin: 0 0 10px 0; font-size: 2rem; letter-spacing: 1px;}
-        .lock-box input {
-            width: 100%; padding: 15px; margin: 30px 0; background: rgba(0,0,0,0.5);
-            border: 1px solid var(--neon-cyan); color: white; border-radius: 12px;
-            outline: none; text-align: center; font-size: 1.2rem; letter-spacing: 3px;
-        }
-        .lock-box input:focus { box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); }
-        .lock-box button {
-            width: 100%; padding: 15px; background: rgba(188, 19, 254, 0.1);
-            border: 1px solid var(--neon-purple); color: var(--neon-purple);
-            border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem;
-            text-transform: uppercase; letter-spacing: 2px;
-        }
-        .lock-box button:hover { background: rgba(188, 19, 254, 0.2); box-shadow: 0 0 20px rgba(188, 19, 254, 0.4); }
-        #errorMessage { color: var(--neon-red); font-size: 0.9rem; margin-top: 15px; display: none; font-weight: 600;}
-
-        /* =========================================
-           3. TOAST NOTIFICATIONS
-           ========================================= */
-        #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 10000; display: flex; flex-direction: column; gap: 15px; }
-        .toast {
-            background: rgba(10, 14, 23, 0.95); border-left: 4px solid var(--neon-cyan);
-            padding: 18px 25px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px); color: white; font-weight: 500; min-width: 300px;
-            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            display: flex; align-items: center; gap: 10px;
-        }
-        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .toast.fade-out { opacity: 0; transform: translateX(100%); }
-        .toast.success { border-color: var(--neon-green); }
-        .toast.error { border-color: var(--neon-red); }
-        .toast.warning { border-color: #ffb86c; }
-
-        /* =========================================
-           4. LAYOUT & SIDEBAR
-           ========================================= */
-        nav {
-            width: 280px; background: rgba(0, 0, 0, 0.3); border-right: 1px solid var(--panel-border);
-            display: flex; flex-direction: column; padding: 35px 25px; backdrop-filter: blur(15px);
-        }
-        .brand { font-size: 1.6rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 50px; display: flex; align-items: center; gap: 12px; }
-        .brand-icon { width: 24px; height: 24px; background: var(--neon-cyan); border-radius: 6px; box-shadow: 0 0 20px var(--neon-cyan); }
         
-        .nav-links { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
-        .nav-item {
-            color: var(--text-muted); text-decoration: none; padding: 14px 18px; border-radius: 10px;
-            font-size: 1rem; display: flex; align-items: center; gap: 15px; cursor: pointer; font-weight: 500;
+        * { 
+            box-sizing: border-box; 
+            transition: all 0.2s ease; 
         }
-        .nav-item:hover, .nav-item.active { background: var(--panel-bg); color: var(--text-main); }
-        .nav-item.active { border: 1px solid var(--panel-border); border-left: 4px solid var(--neon-cyan); box-shadow: inset 20px 0 50px rgba(0, 242, 254, 0.05); }
         
-        .user-profile { margin-top: auto; border-top: 1px solid var(--panel-border); padding-top: 25px; color: var(--text-muted); font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;}
-        .lock-btn { background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-        .lock-btn:hover { border-color: var(--neon-red); color: var(--neon-red); }
-
-        main { flex-grow: 1; padding: 40px 60px; overflow-y: auto; position: relative; display: flex; flex-direction: column;}
-        .view-section { display: none; animation: fadeIn 0.4s ease; flex-grow: 1; flex-direction: column; }
-        .view-section.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-        h1 { margin: 0; font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; }
-        .header-sub { color: var(--text-muted); font-size: 1.1rem; margin-top: 5px; }
-
-        /* =========================================
-           5. UI COMPONENTS (Buttons, Cards, Inputs)
-           ========================================= */
-        .btn { padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-align: center; border: none; font-family: inherit; }
-        .btn-primary { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); }
-        .btn-primary:hover { background: rgba(0, 242, 254, 0.1); box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); }
-        .btn-secondary { background: var(--panel-bg); color: var(--text-main); border: 1px solid var(--panel-border); }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
-        .btn-danger { background: transparent; border: 1px solid var(--neon-red); color: var(--neon-red); }
-        .btn-danger:hover { background: rgba(255, 51, 102, 0.1); box-shadow: 0 0 15px rgba(255, 51, 102, 0.3); }
-        .btn-purple { background: transparent; border: 1px solid var(--neon-purple); color: var(--neon-purple); }
-        .btn-purple:hover { background: rgba(188, 19, 254, 0.1); box-shadow: 0 0 20px rgba(188, 19, 254, 0.3); }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .stat-card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 25px; backdrop-filter: blur(5px); }
-        .stat-label { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 15px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;}
-        .stat-value { font-size: 2.5rem; font-weight: 800; color: var(--neon-cyan); text-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
-
-        .section-header { margin-bottom: 25px; font-size: 1.4rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;}
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; margin-bottom: 50px; }
-
-        /* Device Cards */
-        .card { background: rgba(25, 30, 45, 0.5); border: 1px solid var(--panel-border); border-radius: 16px; padding: 25px; backdrop-filter: blur(10px); position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .card:hover { border-color: rgba(0, 242, 254, 0.4); transform: translateY(-4px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); }
-        .device-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .device-name { font-size: 1.3rem; font-weight: 700; }
-        .status { display: flex; align-items: center; font-size: 0.85rem; font-weight: 700; color: var(--neon-green); background: rgba(12, 243, 162, 0.1); padding: 6px 12px; border-radius: 20px; letter-spacing: 0.5px;}
-        .status-dot { width: 8px; height: 8px; background: var(--neon-green); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 12px var(--neon-green); animation: pulse 2s infinite; }
-        .device-meta { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1;}
-        .meta-item { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
-        .meta-item:last-child { border-bottom: none; }
-        .meta-item span:last-child { color: var(--text-main); font-weight: 500; }
-        .card-actions { display: flex; gap: 10px; margin-top: auto;}
+        body { 
+            background: var(--bg-gradient); 
+            background-attachment: fixed; 
+            color: var(--text-main); 
+            font-family: var(--font-main); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
         
-        .card.offline { opacity: 0.7; }
-        .card.offline:hover { border-color: rgba(255, 51, 102, 0.4); }
-        .card.offline .status { color: var(--neon-red); background: rgba(255, 51, 102, 0.1); }
-        .card.offline .status-dot { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); animation: none; }
-
-        /* Upload Zone */
-        .upload-zone { background: rgba(188, 19, 254, 0.03); border: 2px dashed rgba(188, 19, 254, 0.4); border-radius: 16px; padding: 60px 20px; text-align: center; cursor: pointer; margin-bottom: 40px; }
-        .upload-zone:hover, .upload-zone.dragover { background: rgba(188, 19, 254, 0.08); border-color: var(--neon-purple); box-shadow: 0 0 40px rgba(188, 19, 254, 0.2); }
-        .upload-icon { font-size: 3.5rem; color: var(--neon-purple); margin-bottom: 20px; text-shadow: 0 0 20px var(--neon-purple); pointer-events: none;}
-        #uploadProgress { margin-top: 20px; color: var(--neon-cyan); font-weight: bold; display: none; font-size: 1rem; }
-
-        /* Lists */
-        .list-item { background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 20px 25px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
-        .list-item:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05);}
-
-        /* Modals */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
-        .modal { background: var(--bg-gradient); border: 1px solid var(--panel-border); border-top: 4px solid var(--neon-cyan); border-radius: 16px; padding: 40px; width: 450px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
-        .modal h2 { margin-top: 0; color: var(--text-main); font-size: 1.8rem;}
-        .modal input[type="text"], .modal select { width: 100%; padding: 12px; margin: 15px 0 25px 0; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border); color: white; border-radius: 8px; outline: none; font-size: 1rem; font-family: var(--font-main);}
-        .modal input:focus, .modal select:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);}
-        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
-
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0.8); } 70% { box-shadow: 0 0 0 12px rgba(12, 243, 162, 0); } 100% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0); } }
-
-        /* =========================================
-           6. CLOUD IDE & TERMINAL COMPONENTS
-           ========================================= */
-        .ide-container { display: flex; flex-direction: column; flex-grow: 1; border: 1px solid var(--panel-border); border-radius: 12px; overflow: hidden; background: #1e1e1e; margin-bottom: 20px;}
-        .ide-toolbar { background: #252526; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;}
-        .ide-toolbar .file-name { color: #d4d4d4; font-family: var(--font-mono); font-size: 0.9rem;}
-        .ide-toolbar .actions { display: flex; gap: 10px; align-items: center;}
+        /* Custom Scrollbars for a seamless UI experience */
+        ::-webkit-scrollbar { 
+            width: 8px; 
+            height: 8px; 
+        } 
         
-        /* Injection Toggle Switch */
-        .switch-container { display: flex; align-items: center; gap: 10px; color: var(--neon-cyan); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;}
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan);}
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        #editorContainer { flex-grow: 1; min-height: 400px; }
+        ::-webkit-scrollbar-track { 
+            background: transparent; 
+        } 
         
-        .terminal { background: #000; border-top: 1px solid #333; height: 200px; padding: 15px; font-family: var(--font-mono); font-size: 0.85rem; color: #0f0; overflow-y: auto; display: none;}
-        .terminal.active { display: block; }
-        .term-line { margin: 2px 0; }
-        .term-system { color: #55aaff; }
-        .term-error { color: #ff5555; }
-        .term-success { color: #55ff55; }
-        .term-warn { color: #ffff55; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 4px; 
+        } 
+        
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--neon-cyan); 
+        }
+        
+        /* ==========================================================================
+           2. AUTHENTICATION LOCK SCREEN
+           ========================================================================== */
+        #lockScreen { 
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            z-index: 9999; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
 
-        /* Filter Pills */
-        .filters { display: flex; gap: 10px; margin-bottom: 20px; }
-        .filter-pill { padding: 6px 16px; border-radius: 20px; background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600;}
-        .filter-pill.active { background: rgba(0, 242, 254, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .lock-box { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--neon-cyan); 
+            padding: 50px; 
+            border-radius: 12px; 
+            text-align: center; 
+            width: 90%;
+            max-width: 450px; 
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.1); 
+            backdrop-filter: blur(10px);
+        }
+
+        .lock-box h1 { 
+            margin: 0; 
+            font-size: 2.5rem; 
+            letter-spacing: 2px; 
+            color: var(--text-main); 
+        }
+
+        .lock-box h2 { 
+            color: var(--neon-cyan); 
+            margin: 0 0 10px 0; 
+            font-size: 1.2rem; 
+            letter-spacing: 4px;
+        }
+
+        .lock-box input { 
+            width: 100%; 
+            padding: 18px; 
+            margin: 30px 0; 
+            background: rgba(0, 0, 0, 0.8); 
+            border: 1px solid var(--panel-border); 
+            color: white; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-size: 1.2rem; 
+            letter-spacing: 2px; 
+        }
+
+        .lock-box input:focus { 
+            border-color: var(--neon-cyan); 
+            outline: none; 
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); 
+        }
+        
+        /* ==========================================================================
+           3. UI COMPONENTS & BUTTONS
+           ========================================================================== */
+        .btn { 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border: none; 
+            text-transform: uppercase; 
+            font-size: 0.85rem; 
+            letter-spacing: 1px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px;
+        }
+
+        .btn-primary { 
+            background: rgba(0, 242, 254, 0.1); 
+            border: 1px solid var(--neon-cyan); 
+            color: var(--neon-cyan); 
+        } 
+
+        .btn-primary:hover:not(:disabled) { 
+            background: var(--neon-cyan); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--neon-cyan); 
+        }
+
+        .btn-secondary { 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid var(--panel-border); 
+            color: var(--text-muted); 
+        } 
+
+        .btn-secondary:hover:not(:disabled) { 
+            border-color: white; 
+            color: white; 
+            background: rgba(255, 255, 255, 0.1); 
+        }
+
+        .btn-danger { 
+            background: rgba(255, 51, 102, 0.1); 
+            border: 1px solid var(--neon-red); 
+            color: var(--neon-red); 
+        } 
+
+        .btn-danger:hover:not(:disabled) { 
+            background: var(--neon-red); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--neon-red); 
+        }
+
+        .btn-purple { 
+            background: rgba(188, 19, 254, 0.1); 
+            border: 1px solid var(--neon-purple); 
+            color: var(--neon-purple); 
+        } 
+
+        .btn-purple:hover:not(:disabled) { 
+            background: var(--neon-purple); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--neon-purple); 
+        }
+
+        .btn:disabled { 
+            opacity: 0.4; 
+            cursor: not-allowed; 
+            filter: grayscale(100%); 
+        }
+
+        /* Form Elements: Inputs & Select Dropdowns */
+        input[type="text"], 
+        input[type="number"], 
+        select {
+            width: 100%; 
+            padding: 12px; 
+            background: rgba(0, 0, 0, 0.5); 
+            border: 1px solid var(--panel-border); 
+            color: white; 
+            border-radius: 6px; 
+            outline: none; 
+            font-family: var(--font-main);
+        }
+
+        input:focus, 
+        select:focus { 
+            border-color: var(--neon-cyan); 
+        }
+
+        /* ==========================================================================
+           4. LAYOUT & NAVIGATION
+           ========================================================================== */
+        nav { 
+            width: 280px; 
+            background: rgba(0, 0, 0, 0.5); 
+            border-right: 1px solid var(--panel-border); 
+            padding: 30px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            backdrop-filter: blur(10px); 
+            z-index: 100;
+        }
+
+        .brand { 
+            font-size: 1.5rem; 
+            font-weight: 900; 
+            color: white; 
+            letter-spacing: 2px; 
+            margin-bottom: 40px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+
+        .brand-icon { 
+            width: 24px; 
+            height: 24px; 
+            background: var(--neon-purple); 
+            border-radius: 6px; 
+            box-shadow: 0 0 15px var(--neon-purple); 
+        }
+        
+        .nav-item { 
+            color: var(--text-muted); 
+            padding: 14px 15px; 
+            border-radius: 8px; 
+            margin-bottom: 8px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-weight: 500; 
+        }
+
+        .nav-item:hover, 
+        .nav-item.active { 
+            background: rgba(0, 242, 254, 0.05); 
+            color: var(--neon-cyan); 
+            border-left: 4px solid var(--neon-cyan); 
+            padding-left: 11px;
+        }
+        
+        main { 
+            flex-grow: 1; 
+            padding: 40px; 
+            overflow-y: auto; 
+            position: relative; 
+        }
+
+        .view-section { 
+            display: none; 
+            flex-direction: column; 
+            height: 100%; 
+            animation: fade 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); 
+        } 
+
+        .view-section.active { 
+            display: flex; 
+        }
+
+        @keyframes fade { 
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            } 
+        }
+
+        /* ==========================================================================
+           5. DASHBOARD & DEVICE CARDS
+           ========================================================================== */
+        .header-box { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-bottom: 30px; 
+            border-bottom: 1px solid var(--panel-border); 
+            padding-bottom: 20px;
+            gap: 15px; 
+            flex-wrap: wrap;
+        }
+
+        .header-box h1 { 
+            margin: 0; 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+        }
+
+        .header-box p { 
+            color: var(--text-muted); 
+            margin: 5px 0 0 0; 
+            font-size: 1.1rem; 
+        }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+
+        .stat-card { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--panel-border); 
+            padding: 25px; 
+            border-radius: 12px; 
+            backdrop-filter: blur(5px); 
+        }
+
+        .stat-value { 
+            font-size: 3rem; 
+            font-weight: 800; 
+            color: var(--text-main); 
+            margin-top: 10px; 
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.1); 
+        }
+        
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+            gap: 25px; 
+        }
+
+        .card { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow: hidden;
+        }
+
+        .card:hover { 
+            border-color: var(--neon-cyan); 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); 
+            transform: translateY(-3px); 
+        }
+        
+        .status-dot { 
+            width: 12px; 
+            height: 12px; 
+            background: var(--neon-green); 
+            border-radius: 50%; 
+            display: inline-block; 
+            margin-right: 8px; 
+            box-shadow: 0 0 15px var(--neon-green); 
+            animation: pulse 2s infinite;
+        }
+
+        .offline .status-dot { 
+            background: var(--neon-red); 
+            box-shadow: 0 0 15px var(--neon-red); 
+            animation: none; 
+        }
+
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0.7); } 
+            70% { box-shadow: 0 0 0 10px rgba(12, 243, 162, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0); } 
+        }
+
+        .meta-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px 0; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+            font-size: 0.95rem; 
+        }
+
+        .meta-row:last-of-type { 
+            border-bottom: none; 
+        }
+        
+        /* ==========================================================================
+           6. CLOUD IDE & FILE EXPLORER
+           ========================================================================== */
+        .ide-layout { 
+            display: flex; 
+            gap: 20px; 
+            height: 100%; 
+            min-height: 600px; 
+            flex-wrap: wrap;
+        }
+
+        .ide-sidebar { 
+            width: 280px; 
+            background: var(--panel-bg); 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .ide-main { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            min-width: 300px; 
+        }
+        
+        .file-item { 
+            padding: 12px 15px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            color: var(--text-muted); 
+            font-size: 0.95rem; 
+            margin-bottom: 5px; 
+            border: 1px solid transparent; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 10px; 
+        }
+
+        .file-item:hover { 
+            background: rgba(255, 255, 255, 0.05); 
+            color: white; 
+        }
+
+        .file-item.active { 
+            background: rgba(0, 242, 254, 0.1); 
+            border-color: var(--neon-cyan); 
+            color: var(--neon-cyan); 
+        }
+        
+        .ide-tabs { 
+            display: flex; 
+            background: #0a0a0a; 
+            border-bottom: 1px solid #333; 
+            overflow-x: auto; 
+        }
+
+        .ide-tab { 
+            padding: 12px 20px; 
+            color: #888; 
+            border-right: 1px solid #333; 
+            cursor: pointer; 
+            font-family: var(--font-mono); 
+            font-size: 0.9rem; 
+            white-space: nowrap;
+        }
+
+        .ide-tab.active { 
+            background: #1e1e1e; 
+            color: #fff; 
+            border-top: 2px solid var(--neon-purple); 
+        }
+        
+        #editorContainer { 
+            flex-grow: 1; 
+            background: #1e1e1e; 
+            min-height: 300px;
+        }
+        
+        .terminal { 
+            height: 200px; 
+            background: #050505; 
+            border-top: 1px solid #333; 
+            padding: 15px; 
+            font-family: var(--font-mono); 
+            font-size: 0.9rem; 
+            color: #ccc; 
+            overflow-y: auto; 
+        }
+
+        .term-line { 
+            margin: 4px 0; 
+            line-height: 1.4; 
+        } 
+
+        .term-sys { color: #55aaff; } 
+        .term-err { color: #ff5555; } 
+        .term-succ { color: #55ff55; } 
+        .term-warn { color: #ffaa00; }
+
+        /* ==========================================================================
+           7. WEB SERIAL TERMINAL
+           ========================================================================== */
+        .serial-console { 
+            background: #000; 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            height: 500px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        .serial-toolbar { 
+            background: #111; 
+            padding: 15px; 
+            display: flex; 
+            gap: 15px; 
+            border-bottom: 1px solid #333; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+
+        .serial-output { 
+            flex-grow: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            font-family: var(--font-mono); 
+            font-size: 0.9rem; 
+            color: #0cf3a2; 
+            white-space: pre-wrap; 
+        }
+
+        .serial-input-area { 
+            display: flex; 
+            border-top: 1px solid #333; 
+            flex-wrap: wrap;
+        }
+
+        .serial-input-area input { 
+            flex-grow: 1; 
+            background: #111; 
+            border: none; 
+            padding: 15px; 
+            color: white; 
+            font-family: var(--font-mono); 
+            outline: none; 
+            min-width: 200px;
+        }
+
+        /* ==========================================================================
+           8. HEARTBEAT MONITOR
+           ========================================================================== */
+        .heartbeat-container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 30px; 
+            height: 500px; 
+        }
+
+        .heartbeat-log-panel { 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        .heartbeat-header { 
+            background: rgba(12, 243, 162, 0.1); 
+            color: var(--neon-green); 
+            padding: 15px; 
+            font-weight: bold; 
+            border-bottom: 1px solid rgba(12, 243, 162, 0.3); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+
+        .heartbeat-list { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 10px; 
+        }
+
+        .heartbeat-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px; 
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1); 
+            font-family: var(--font-mono); 
+            font-size: 0.85rem; 
+            animation: slideDown 0.3s ease-out; 
+        }
+
+        @keyframes slideDown { 
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            } 
+        }
+
+        .heartbeat-item:last-child { 
+            border-bottom: none; 
+        }
+
+        .ping-time { 
+            color: var(--neon-purple); 
+        } 
+
+        .ping-device { 
+            color: var(--text-main); 
+            font-weight: bold; 
+        } 
+
+        .ping-status { 
+            color: var(--neon-green); 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+        }
+
+        .pulse-ring-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: rgba(0, 0, 0, 0.2); 
+            border: 1px solid var(--panel-border); 
+            border-radius: 12px; 
+            position: relative; 
+            overflow: hidden; 
+        }
+
+        .pulse-ring { 
+            width: 150px; 
+            height: 150px; 
+            border-radius: 50%; 
+            background: rgba(12, 243, 162, 0.1); 
+            position: absolute; 
+            animation: radarPulse 2s infinite linear; 
+        }
+
+        .pulse-ring:nth-child(2) { 
+            animation-delay: 0.6s; 
+        } 
+
+        .pulse-ring:nth-child(3) { 
+            animation-delay: 1.2s; 
+        }
+
+        @keyframes radarPulse { 
+            0% { transform: scale(0.5); opacity: 1; border: 2px solid var(--neon-green); } 
+            100% { transform: scale(3); opacity: 0; border: 2px solid var(--neon-green); } 
+        }
+
+        .center-node { 
+            width: 50px; 
+            height: 50px; 
+            background: var(--neon-green); 
+            border-radius: 50%; 
+            position: relative; 
+            z-index: 10; 
+            box-shadow: 0 0 30px var(--neon-green); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 1.5rem; 
+        }
+
+        /* ==========================================================================
+           9. MODALS & TOASTS
+           ========================================================================== */
+        .modal-overlay { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0, 0, 0, 0.85); 
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center; 
+            backdrop-filter: blur(8px); 
+            padding: 20px;
+        }
+
+        .modal { 
+            background: var(--bg-gradient); 
+            border: 1px solid var(--panel-border); 
+            border-top: 4px solid var(--neon-cyan); 
+            padding: 40px; 
+            width: 100%; 
+            max-width: 500px; 
+            border-radius: 12px; 
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8); 
+            max-height: 90vh; 
+            overflow-y: auto;
+        }
+
+        .modal h2 { 
+            margin-top: 0; 
+            font-size: 1.8rem; 
+            letter-spacing: 1px; 
+        }
+
+        .modal-actions { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 15px; 
+            margin-top: 30px; 
+            flex-wrap: wrap;
+        }
+
+        #toastContainer { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            z-index: 10000; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+
+        .toast { 
+            background: #111; 
+            border-left: 4px solid var(--neon-cyan); 
+            padding: 18px 25px; 
+            color: white; 
+            border-radius: 6px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            min-width: 250px; 
+        }
+
+        .upload-zone { 
+            border: 2px dashed var(--neon-purple); 
+            padding: 60px; 
+            text-align: center; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            cursor: pointer; 
+            background: rgba(188, 19, 254, 0.05); 
+        }
+
+        .upload-zone:hover { 
+            background: rgba(188, 19, 254, 0.1); 
+            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); 
+        }
+
+        /* ==========================================================================
+           10. MOBILE RESPONSIVENESS ENGINE
+           ========================================================================== */
+        @media (max-width: 850px) {
+            body { 
+                flex-direction: column; 
+                overflow-y: auto; 
+            }
+
+            nav { 
+                width: 100%; 
+                padding: 15px; 
+                border-right: none; 
+                border-bottom: 1px solid var(--panel-border); 
+                flex-direction: row; 
+                flex-wrap: wrap; 
+                justify-content: center; 
+                gap: 5px; 
+            }
+
+            .brand { 
+                width: 100%; 
+                justify-content: center; 
+                margin-bottom: 10px; 
+            }
+
+            .nav-section-title { 
+                display: none; /* Hide headers on mobile nav to save space */
+            }
+
+            .nav-item { 
+                padding: 10px; 
+                font-size: 0.85rem; 
+                margin-bottom: 0; 
+            }
+
+            .admin-panel { 
+                width: 100%; 
+                border-top: 1px solid var(--panel-border); 
+                margin-top: 10px; 
+                padding-top: 10px; 
+                text-align: center; 
+            }
+            
+            main { 
+                padding: 20px; 
+                overflow-y: visible; 
+            }
+
+            .header-box { 
+                flex-direction: column; 
+                align-items: flex-start; 
+            }
+
+            .stats-grid { 
+                grid-template-columns: 1fr; 
+            }
+
+            .grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            .ide-layout { 
+                flex-direction: column; 
+            }
+
+            .ide-sidebar { 
+                width: 100%; 
+                margin-bottom: 20px; 
+            }
+            
+            .heartbeat-container { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+            }
+
+            .pulse-ring-container { 
+                height: 300px; 
+                margin-bottom: 20px; 
+            }
+
+            .heartbeat-log-panel { 
+                height: 400px; 
+            }
+            
+            .modal { 
+                padding: 25px; 
+            }
+
+            #toastContainer { 
+                right: 20px; 
+                bottom: 20px; 
+                left: 20px; 
+                align-items: center; 
+            }
+
+            .toast { 
+                width: 100%; 
+                min-width: 0; 
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div id="toastContainer"></div>
-
     <div id="lockScreen">
         <div class="lock-box">
-            <h2>System Locked</h2>
-            <p style="color: var(--text-muted); font-size: 0.95rem;">Enter admin credentials to access DBP Cloud.</p>
-            <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="off">
-            <button onclick="auth.checkPassword()">Unlock Console</button>
-            <div id="errorMessage">Access Denied: Invalid Credentials</div>
+            <h1>DBP OS</h1>
+            <h2>ENTERPRISE</h2>
+            <input type="password" id="passwordInput" placeholder="ENTER MASTER KEY" autocomplete="off">
+            <button class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="window.auth.login()">INITIALIZE SYSTEM</button>
+            <p id="authError" style="color: var(--neon-red); margin-top: 15px; display: none; font-weight: bold;">SECURITY BREACH: INVALID KEY</p>
         </div>
     </div>
 
+    <div id="toastContainer"></div>
+
     <div id="registerModal" class="modal-overlay">
         <div class="modal">
-            <h2>Register Device</h2>
-            <p style="color: var(--text-muted);">This generates a secure token for communication.</p>
-            <input type="text" id="regDeviceName" placeholder="e.g. Living Room Node">
-            <select id="regBoardType">
-                <option value="ESP32 Dev Module">ESP32 Dev Module</option>
-                <option value="ESP32-WROOM">ESP32-WROOM</option>
-                <option value="ESP32-CAM">ESP32-CAM</option>
-                <option value="ESP8266 NodeMCU">ESP8266 NodeMCU</option>
-            </select>
+            <h2>Register Hardware Node</h2>
+            <p style="color: var(--text-muted);">Generate a secure Firebase Token for a new physical board.</p>
+            <div style="margin-top: 25px;">
+                <label style="color: var(--neon-cyan); font-size: 0.85rem;">NODE IDENTIFIER (NAME)</label>
+                <input type="text" id="regDeviceName" placeholder="e.g. Laser-Tripwire-Main">
+                
+                <label style="color: var(--neon-cyan); font-size: 0.85rem; margin-top: 15px; display: block;">HARDWARE ARCHITECTURE</label>
+                <select id="regBoardType">
+                    <option value="ESP32 Dev Module">ESP32 Dev Module</option>
+                    <option value="ESP32-CAM">ESP32-CAM (Camera Node)</option>
+                    <option value="ESP8266 NodeMCU">ESP8266 NodeMCU</option>
+                    <option value="Arduino Uno R4 WiFi">Arduino Uno R4 WiFi</option>
+                </select>
+            </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="ui.closeModals()">Cancel</button>
-                <button class="btn btn-primary" onclick="dbOps.registerDevice()">Register</button>
+                <button class="btn btn-secondary" onclick="window.ui.closeModals()">Cancel</button>
+                <button class="btn btn-primary" onclick="window.dbOps.register()">Generate Token</button>
             </div>
         </div>
     </div>
 
-    <div id="settingsModal" class="modal-overlay">
+    <div id="renameModal" class="modal-overlay">
         <div class="modal">
-            <h2>Device Settings</h2>
-            <input type="hidden" id="editDeviceId">
-            <label style="color: var(--text-muted); font-size: 0.85rem;">Device Name</label>
-            <input type="text" id="editDeviceName" placeholder="Rename Device">
+            <h2>Node Settings</h2>
+            <p style="color: var(--text-muted);">Change the display name or delete this hardware node.</p>
+            <input type="hidden" id="renameDeviceId">
+            
+            <label style="color: var(--neon-cyan); font-size: 0.85rem; margin-top: 15px; display: block;">NEW DEVICE NAME</label>
+            <input type="text" id="newDeviceNameInput" placeholder="e.g. Master Bedroom Node">
+            
             <div class="modal-actions" style="justify-content: space-between; margin-top: 30px;">
-                <button class="btn btn-danger" onclick="dbOps.deleteDevice()">Delete Device</button>
-                <div>
-                    <button class="btn btn-secondary" onclick="ui.closeModals()">Cancel</button>
-                    <button class="btn btn-primary" onclick="dbOps.saveDeviceSettings()">Save</button>
+                <button class="btn btn-danger" onclick="window.dbOps.deleteDevice()">🗑️ Delete Node</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="window.ui.closeModals()">Cancel</button>
+                    <button class="btn btn-primary" onclick="window.dbOps.saveRename()">Save Name</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="deployModal" class="modal-overlay">
+    <div id="controlModal" class="modal-overlay">
         <div class="modal">
-            <h2>Deploy OTA Update</h2>
-            <p style="color: var(--text-muted);">Pushing firmware to: <span id="deployDeviceNameDisplay" style="color: var(--neon-cyan); font-weight: bold;"></span></p>
-            <input type="hidden" id="deployDeviceId">
-            <select id="deployFirmwareSelect">
-                <option value="">Loading library...</option>
-            </select>
+            <h2>Command Console</h2>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">Target Node: <span id="ctrlTargetName" style="color: var(--neon-cyan); font-weight: bold;"></span></p>
+            <input type="hidden" id="ctrlDeviceId">
+            
+            <div style="background: rgba(255, 51, 102, 0.05); border: 1px solid rgba(255, 51, 102, 0.3); padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h4 style="margin: 0 0 10px 0; color: var(--neon-red);">Hardware Power Cycle</h4>
+                <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.9rem;">Force the ESP32 to restart. Requires the device to be online.</p>
+                <button class="btn btn-danger" style="width: 100%;" onclick="window.dbOps.reboot()">⚠️ EXECUTE REMOTE REBOOT</button>
+            </div>
+
+            <div style="background: rgba(188, 19, 254, 0.05); border: 1px solid rgba(188, 19, 254, 0.3); padding: 20px; border-radius: 8px;">
+                <h4 style="margin: 0 0 10px 0; color: var(--neon-purple);">Inject Custom Command</h4>
+                <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.9rem;">Send a string directly to the board's C++ loop logic.</p>
+                <input type="text" id="ctrlCommand" placeholder="Command String (e.g. LED_ON, SERVO_90)">
+                <button class="btn btn-purple" style="width: 100%; margin-top: 10px;" onclick="window.dbOps.sendCommand()">TRANSMIT COMMAND</button>
+            </div>
+            
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="ui.closeModals()">Cancel</button>
-                <button class="btn btn-primary" onclick="dbOps.triggerOTA()">Push Update</button>
+                <button class="btn btn-secondary" onclick="window.ui.closeModals()">Close Console</button>
             </div>
         </div>
     </div>
 
     <nav>
-        <div class="brand"><div class="brand-icon"></div>DBP Cloud</div>
-        <div class="nav-links">
-            <a class="nav-item active" onclick="ui.switchView('devices', this)"><span>🖥️</span> Devices Dashboard</a>
-            <a class="nav-item" onclick="ui.switchView('ide', this)"><span>&lt;/&gt;</span> Cloud IDE (Write Code)</a>
-            <a class="nav-item" onclick="ui.switchView('firmware', this)"><span>📦</span> Firmware Library</a>
-            <a class="nav-item" onclick="ui.switchView('analytics', this)"><span>📊</span> Analytics & Health</a>
-            <a class="nav-item" onclick="ui.switchView('settings', this)"><span>⚙️</span> Platform Settings</a>
-        </div>
-        <div class="user-profile">
-            <div>
-                <div style="color: white; font-weight: bold; margin-bottom: 5px;">D.Baivab Pattanayak@dbp.local</div>
-                <div style="font-size: 0.75rem; color: var(--neon-green);">Admin Privileges</div>
-            </div>
-            <button class="lock-btn" onclick="auth.logout()" title="Lock System">🔒</button>
+        <div class="brand"><div class="brand-icon"></div>DBP CLOUD</div>
+        
+        <div class="nav-section-title" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">CORE SYSTEMS</div>
+        <div class="nav-item active" onclick="window.ui.nav('devices', this)">🖥️ Fleet Telemetry</div>
+        <div class="nav-item" onclick="window.ui.nav('ide', this)">💻 Cloud IDE Editor</div>
+        <div class="nav-item" onclick="window.ui.nav('vault', this)">📦 Firmware Vault</div>
+        
+        <div class="nav-section-title" style="font-size: 0.75rem; color: var(--text-muted); margin: 30px 0 10px 0; letter-spacing: 1px;">ADVANCED TOOLS</div>
+        <div class="nav-item" onclick="window.ui.nav('heartbeat', this)">💓 Heartbeat Monitor</div>
+        <div class="nav-item" onclick="window.ui.nav('serial', this)">🔌 Web Serial USB</div>
+        <div class="nav-item" onclick="window.ui.nav('analytics', this)">📊 Network Analytics</div>
+        <div class="nav-item" onclick="window.ui.nav('logs', this)">📝 System Audit Logs</div>
+        
+        <div class="admin-panel" style="margin-top: auto; border-top: 1px solid var(--panel-border); padding-top: 20px;">
+            <div style="color: white; font-weight: bold; margin-bottom: 5px;">D Baivab Pattanayak</div>
+            <div style="font-size: 0.75rem; color: var(--neon-green); margin-bottom: 15px;">System Administrator</div>
+            <button class="btn btn-secondary" style="width: 100%; padding: 10px;" onclick="window.auth.logout()">🔒 Lock Terminal</button>
         </div>
     </nav>
 
     <main>
+        
         <div id="view-devices" class="view-section active">
-            <header>
+            <div class="header-box">
                 <div>
-                    <h1>Fleet Management</h1>
-                    <div class="header-sub">Monitor and deploy OTA updates to your hardware fleet.</div>
+                    <h1>Node Telemetry</h1>
+                    <p>Live hardware monitoring, diagnostics, and remote control.</p>
                 </div>
-                <button class="btn btn-primary" onclick="document.getElementById('registerModal').style.display='flex'">+ Register New Device</button>
-            </header>
-
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card"><div class="stat-label">Total Devices</div><div class="stat-value" id="statTotal">0</div></div>
-                <div class="stat-card"><div class="stat-label">Online Status</div><div class="stat-value" style="color: var(--neon-green);" id="statOnline">0</div></div>
-                <div class="stat-card"><div class="stat-label">Pending Updates</div><div class="stat-value" style="color: var(--neon-purple);" id="statPending">0</div></div>
-                <div class="stat-card"><div class="stat-label">System Health</div><div class="stat-value" style="color: var(--text-main);">100%</div></div>
+                <button class="btn btn-primary" onclick="document.getElementById('registerModal').style.display='flex'">+ Register New Node</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div style="color:var(--text-muted); font-size:0.9rem; text-transform:uppercase;">Registered Nodes</div>
+                    <div class="stat-value" id="s-total">0</div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid var(--neon-green);">
+                    <div style="color:var(--neon-green); font-size:0.9rem; text-transform:uppercase;">Active & Online</div>
+                    <div class="stat-value" style="color: var(--neon-green);" id="s-online">0</div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid var(--neon-purple);">
+                    <div style="color:var(--neon-purple); font-size:0.9rem; text-transform:uppercase;">Pending OTA Updates</div>
+                    <div class="stat-value" style="color: var(--neon-purple);" id="s-ota">0</div>
+                </div>
             </div>
 
-            <div class="section-header">
-                <div>Live Devices</div>
-                <div class="filters">
-                    <div class="filter-pill active" onclick="ui.filterDevices('all', this)">All</div>
-                    <div class="filter-pill" onclick="ui.filterDevices('online', this)">Online</div>
-                    <div class="filter-pill" onclick="ui.filterDevices('offline', this)">Offline</div>
-                </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="btn btn-secondary filter-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="window.ui.filter('all', this)">Show All</button>
+                <button class="btn btn-secondary filter-btn" onclick="window.ui.filter('online', this)">Online Only</button>
+                <button class="btn btn-secondary filter-btn" onclick="window.ui.filter('offline', this)">Offline Only</button>
             </div>
+
             <div class="grid" id="deviceGrid">
-                <div style="color: var(--text-muted); padding: 20px;">Establishing secure connection to Firebase...</div>
+                <div style="color:var(--text-muted); padding: 20px; font-size: 1.2rem;">Establishing secure Firebase Handshake...</div>
             </div>
         </div>
 
         <div id="view-ide" class="view-section">
-            <header>
+            <div class="header-box">
                 <div>
-                    <h1>Cloud IDE & Compiler</h1>
-                    <div class="header-sub">Write raw C++ code. The system will silently inject the OTA layer.</div>
+                    <h1 style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        DBP Compiler Engine 
+                        <span style="font-size: 0.8rem; background: var(--neon-purple); color: #000; padding: 4px 10px; border-radius: 20px;">OTA INJECTION: MANDATORY</span>
+                    </h1>
+                    <p>Write raw C++ code. The system automatically wraps it with the Cloud Network Layer.</p>
                 </div>
-                <button class="btn btn-primary" onclick="ide.compileAndDeploy()">⚡ Compile & Deploy</button>
-            </header>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="window.ideOps.saveSketch()">💾 Save to DB</button>
+                    <button class="btn btn-primary" onclick="window.ideOps.compile()">⚡ Compile & Wrap</button>
+                </div>
+            </div>
             
-            <div class="ide-container">
-                <div class="ide-toolbar">
-                    <div class="file-name">main.ino</div>
-                    <div class="actions">
-                        <div class="switch-container" title="Automatically wrap user code with Wi-Fi and OTA functions">
-                            Inject DBP Layer
-                            <label class="switch">
-                                <input type="checkbox" id="injectToggle" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
+            <div class="ide-layout">
+                <div class="ide-sidebar">
+                    <h3 style="margin: 0 0 15px 0; color: var(--neon-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; font-size: 1rem;">Project Explorer</h3>
+                    <div id="sketchList" style="flex-grow: 1; overflow-y: auto;">Loading Database...</div>
+                    <div style="margin-top: 15px; border-top: 1px solid var(--panel-border); padding-top: 15px;">
+                        <input type="text" id="newSketchName" placeholder="Filename (e.g. main)" style="margin-bottom: 10px;">
+                        <button class="btn btn-purple" style="width: 100%;" onclick="window.ideOps.createSketch()">+ Create File</button>
                     </div>
                 </div>
-                <div id="editorContainer"></div>
-                <div id="ideTerminal" class="terminal">
-                    <div class="term-line term-system">DBP Compiler Terminal v2.1.0 Ready.</div>
+                
+                <div class="ide-main">
+                    <div class="ide-tabs">
+                        <div class="ide-tab active" id="currentSketchTab">main.ino</div>
+                        <div class="ide-tab" style="color: var(--neon-purple);">DBP_Cloud.h (Locked Auto-Inject)</div>
+                    </div>
+                    <div id="editorContainer"></div>
+                    
+                    <div class="terminal" id="ideTerm">
+                        <div class="term-line term-sys">DBP Cloud Architecture OS [Version 3.1.0]</div>
+                        <div class="term-line term-sys">(c) DBP Systems. All rights reserved.</div>
+                        <div class="term-line"><br></div>
+                        <div class="term-line term-succ">C++ Compiler Node connected and standing by.</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="view-firmware" class="view-section">
-            <header>
+        <div id="view-vault" class="view-section">
+            <div class="header-box">
                 <div>
-                    <h1>Firmware Vault</h1>
-                    <div class="header-sub">Manage your compiled binaries for wireless deployment.</div>
+                    <h1>Binary Vault</h1>
+                    <p>Secure cloud storage for your compiled `.bin` firmware files. Saves directly to Firebase.</p>
                 </div>
-            </header>
-            
-            <input type="file" id="fwFileInput" accept=".bin" style="display: none;">
-            <div class="upload-zone" id="dropZone" onclick="document.getElementById('fwFileInput').click()">
-                <div class="upload-icon">⚡</div>
-                <div style="color: var(--text-muted); font-size: 1.15rem; max-width: 500px; margin: 0 auto; pointer-events: none;">
-                    Drag & drop or <b style="color: var(--neon-purple);">click to browse</b> a compiled .bin file here to upload it securely.
-                </div>
-                <div id="uploadProgress">Processing File...</div>
             </div>
+            
+            <div class="upload-zone" id="dropZone">
+                <div style="font-size: 4rem; margin-bottom: 15px; text-shadow: 0 0 30px var(--neon-purple);">☁️</div>
+                <h2 style="margin: 0 0 10px 0; color: var(--text-main);">Upload Firmware Binary</h2>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Drag and drop a .bin file here, or click to browse.</p>
+                <input type="file" id="fwInput" accept=".bin" style="display: none;">
+                <div id="fwProgress" style="color: var(--neon-cyan); font-size: 1.2rem; font-weight: bold; margin-top: 20px;"></div>
+            </div>
+            
+            <h3 style="border-bottom: 1px solid var(--panel-border); padding-bottom: 15px; margin-bottom: 20px;">Available Binaries for Deployment</h3>
+            <div id="vaultList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;"></div>
+        </div>
 
-            <div class="section-header">Vault Inventory</div>
-            <div id="firmwareList">
-                <div style="color: var(--text-muted); padding: 20px;">Fetching inventory from cloud storage...</div>
+        <div id="view-heartbeat" class="view-section">
+            <div class="header-box">
+                <div>
+                    <h1 style="color: var(--neon-green);">Heartbeat Monitor</h1>
+                    <p>Real-time pulse tracking and ping validation for all connected nodes.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="window.heartbeatOps.clearLog()">Clear Pulse Log</button>
+            </div>
+            
+            <div class="heartbeat-container">
+                <div class="pulse-ring-container">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="center-node">📡</div>
+                    <div style="position: absolute; bottom: 20px; color: var(--neon-green); font-family: var(--font-mono); font-weight: bold; z-index: 10;">
+                        SCANNING FOR PULSE...
+                    </div>
+                </div>
+
+                <div class="heartbeat-log-panel">
+                    <div class="heartbeat-header">
+                        <span>LATEST PINGS DETECTED</span>
+                        <span id="pingCounter">Total Pings: 0</span>
+                    </div>
+                    <div class="heartbeat-list" id="heartbeatList">
+                        <div style="color: var(--text-muted); text-align: center; margin-top: 50px; font-style: italic;">
+                            Waiting for node telemetry...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-serial" class="view-section">
+            <div class="header-box">
+                <div>
+                    <h1 style="color: #0cf3a2;">Web Serial Terminal</h1>
+                    <p>Direct USB communication from the browser. No Arduino IDE required.</p>
+                </div>
+            </div>
+            
+            <div class="serial-console">
+                <div class="serial-toolbar">
+                    <button class="btn btn-primary" id="btnSerialConnect" onclick="window.serialOps.connect()">🔌 Connect to USB Port</button>
+                    <select id="serialBaudRate" style="width: 200px;">
+                        <option value="9600">9600 Baud</option>
+                        <option value="115200" selected>115200 Baud (DBP Default)</option>
+                    </select>
+                    <div style="flex-grow: 1;"></div>
+                    <button class="btn btn-secondary" onclick="document.getElementById('serialOutput').innerHTML=''">Clear Console</button>
+                </div>
+                
+                <div class="serial-output" id="serialOutput">
+                    <div style="color: #555;">// Waiting for Web Serial Connection...</div>
+                    <div style="color: #555;">// Ensure no other program (like Arduino IDE) is using the COM port.</div>
+                </div>
+                
+                <div class="serial-input-area">
+                    <input type="text" id="serialInput" placeholder="Send serial data to board..." onkeypress="if(event.key === 'Enter') window.serialOps.send()">
+                    <button class="btn btn-primary" style="border-radius: 0;" onclick="window.serialOps.send()">SEND</button>
+                </div>
             </div>
         </div>
 
         <div id="view-analytics" class="view-section">
-            <header>
+            <div class="header-box">
                 <div>
                     <h1>Network Analytics</h1>
-                    <div class="header-sub">System telemetry and heartbeat monitoring.</div>
-                </div>
-            </header>
-            <div class="card" style="height: 300px; display: flex; justify-content: center; align-items: center; border: 1px dashed var(--neon-purple); background: transparent;">
-                <div style="text-align: center; color: var(--text-muted);">
-                    <div style="font-size: 3rem; margin-bottom: 10px;">📈</div>
-                    <div>Analytics Canvas (Chart.js Integration Pending)</div>
-                    <div style="font-size: 0.8rem; margin-top: 5px;">Data collection is active. Visualizations will render in future updates.</div>
+                    <p>Visual telemetry data for your active fleet.</p>
                 </div>
             </div>
-        </div>
-
-        <div id="view-settings" class="view-section">
-            <header>
-                <div>
-                    <h1>Platform Settings</h1>
-                    <div class="header-sub">Advanced configurations and local USB flashing.</div>
-                </div>
-            </header>
             
-            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 15px;">
-                <h3 style="margin: 0; color: var(--text-main);">Web Serial API (Initial Flashing)</h3>
-                <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
-                    Before an ESP32 can receive wireless OTA updates, it must be flashed with the base DBP_Cloud runtime. 
-                    Connect your ESP32 via USB to flash directly from the browser.
-                </p>
-                <button class="btn btn-purple" onclick="ui.showToast('Web Serial API requires HTTPS and a compiled Base.bin file. Feature locked in current environment.', 'warning')">🔌 Connect USB Device</button>
-            </div>
-
-            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 15px; border-color: rgba(255, 51, 102, 0.3);">
-                <h3 style="margin: 0; color: var(--neon-red);">Danger Zone</h3>
-                <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Permanently wipe all database records and disconnected devices.</p>
-                <button class="btn btn-danger" onclick="if(confirm('Are you sure? This cannot be undone.')) ui.showToast('Database wipe feature disabled for safety.', 'error')">Wipe Database</button>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                <div style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; height: 400px;">
+                    <h3 style="margin-top: 0; color: var(--text-muted); font-size: 1rem;">Live RSSI (Signal Strength)</h3>
+                    <canvas id="rssiChart"></canvas>
+                </div>
+                <div style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; height: 400px;">
+                    <h3 style="margin-top: 0; color: var(--text-muted); font-size: 1rem;">Memory Allocation (Free Heap)</h3>
+                    <canvas id="heapChart"></canvas>
+                </div>
             </div>
         </div>
+
+        <div id="view-logs" class="view-section">
+            <div class="header-box">
+                <div>
+                    <h1>System Audit Logs</h1>
+                    <p>Immutable record of all commands, OTA pushes, and system events.</p>
+                </div>
+            </div>
+            <div style="background: #000; border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; height: 600px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.9rem;" id="auditLogContainer">
+                Loading secure logs...
+            </div>
+        </div>
+
     </main>
 
     <script>
-        // --- UI & TOAST SYSTEM ---
-        const ui = {
-            showToast: (message, type = 'info') => {
+        /**
+         * The primary User Interface controller.
+         * Handles toast notifications, navigation routing, modal toggles, and UI security.
+         * @namespace ui
+         */
+        window.ui = {
+            
+            /**
+             * Security Sanitizer (XSS HTML Protection)
+             * Prevents injection attacks if malicious code is rendered to the DOM.
+             * @param {string} str - Raw string from database.
+             * @returns {string} - Clean, web-safe string.
+             */
+            escapeHTML: (str) => {
+                if (!str) return "";
+                return String(str).replace(/[&<>'"]/g, 
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag] || tag)
+                );
+            },
+
+            /**
+             * Security Sanitizer (JS String Literal Escaping)
+             * CRITICAL FIX: Ensures strings passed into inline onclick='' attributes don't break the quotes.
+             * @param {string} str - Raw string.
+             * @returns {string} - Slash-escaped string safe for JavaScript execution contexts.
+             */
+            escapeJS: (str) => {
+                if (!str) return "";
+                return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            },
+            
+            /**
+             * Triggers a sliding toast notification alert in the bottom right.
+             * @param {string} msg - The message to be displayed inside the toast.
+             * @param {string} type - Defines the styling theme: 'info', 'success', 'warning', 'error'.
+             */
+            toast: (msg, type = 'info') => {
                 const container = document.getElementById('toastContainer');
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-                toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+                const toast = document.createElement('div'); 
+                toast.className = `toast`;
+                
+                let icon = 'ℹ️'; 
+                let color = 'var(--neon-cyan)';
+                
+                // Determine theme styling based on notification type
+                if (type === 'success') { 
+                    icon = '✅'; 
+                    color = 'var(--neon-green)'; 
+                }
+                if (type === 'error') { 
+                    icon = '❌'; 
+                    color = 'var(--neon-red)'; 
+                }
+                if (type === 'warning') { 
+                    icon = '⚠️'; 
+                    color = 'var(--neon-yellow)'; 
+                }
+                
+                toast.style.borderLeftColor = color;
+                toast.innerHTML = `<span>${icon}</span> <span>${window.ui.escapeHTML(msg)}</span>`;
                 container.appendChild(toast);
-                setTimeout(() => {
-                    toast.classList.add('fade-out');
-                    setTimeout(() => toast.remove(), 400);
+                
+                // Set timeout for graceful CSS fade out
+                setTimeout(() => { 
+                    toast.style.opacity = '0'; 
+                    setTimeout(() => toast.remove(), 300); 
                 }, 3500);
             },
+            
+            /**
+             * Handles switching between main application views.
+             * Also performs lazy loading for heavy scripts (Monaco IDE, Chart.js) to save bandwidth.
+             * @param {string} id - The specific DOM id of the view to activate (e.g. 'ide', 'devices').
+             * @param {HTMLElement} el - The DOM element of the navigation link clicked.
+             */
+            nav: (id, el) => {
+                // Clear active styling from all navigation sidebar items
+                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+                
+                // Hide all main view container sections
+                document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
+                
+                // Apply active styling to the clicked item and show corresponding view
+                el.classList.add('active'); 
+                document.getElementById('view-' + id).classList.add('active');
+                
+                // Lazy Load: Initialize the Monaco C++ editor only if the IDE tab is accessed
+                if (id === 'ide' && !window.ideInited) { 
+                    window.initIDE(); 
+                    window.ideInited = true; 
+                }
+                
+                // Lazy Load: Force a render update on Chart.js canvas contexts when analytics tab is opened
+                if (id === 'analytics') { 
+                    if (window.renderCharts) window.renderCharts(); 
+                }
+            },
+            
+            /**
+             * Iterates through all elements with the .modal-overlay class and sets display to none.
+             * Used globally as a generalized closing mechanism for popups.
+             */
             closeModals: () => {
-                document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
             },
-            switchView: (viewId, element) => {
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                element.classList.add('active');
-                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-                document.getElementById('view-' + viewId).classList.add('active');
-
-                if (viewId === 'ide' && !ide.initialized) ide.init();
-            },
-            currentFilter: 'all',
-            filterDevices: (type, element) => {
-                ui.currentFilter = type;
-                document.querySelectorAll('.filter-pill').forEach(el => el.classList.remove('active'));
-                element.classList.add('active');
-                // The actual filtering happens in the Firestore listener, we just force a UI refresh
-                document.dispatchEvent(new Event('refreshGrid'));
+            
+            /**
+             * Applies filtering logic to the main Fleet Telemetry grid.
+             * @param {string} type - The filter category: 'all', 'online', 'offline'.
+             * @param {HTMLElement} el - The DOM element of the specific filter pill clicked.
+             */
+            filter: (type, el) => {
+                // Reset all filter pills to default unselected styling
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.style.borderColor = 'var(--panel-border)'; 
+                    btn.style.color = 'var(--text-muted)';
+                });
+                
+                // Highlight the currently active filter pill
+                el.style.borderColor = 'var(--neon-cyan)'; 
+                el.style.color = 'var(--neon-cyan)';
+                window.currentDeviceFilter = type;
+                
+                // Trigger a re-render of the device grid with the new filter parameters
+                if (window.renderDevices) {
+                    window.renderDevices();
+                }
             }
         };
 
-        // --- AUTHENTICATION ---
-        const auth = {
-            MASTER_PASSWORD: "DBP_236562_DBP_9827700975_DBP",
-            init: () => {
-                if (localStorage.getItem('dbp_auth') === 'true') {
-                    document.getElementById('lockScreen').style.display = 'none';
-                }
-                document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') auth.checkPassword();
-                });
-            },
-            checkPassword: () => {
-                const input = document.getElementById('passwordInput');
-                if (input.value === auth.MASTER_PASSWORD) {
-                    localStorage.setItem('dbp_auth', 'true');
-                    const lock = document.getElementById('lockScreen');
-                    lock.style.opacity = '0';
-                    setTimeout(() => lock.style.display = 'none', 300);
-                    ui.showToast("System Unlocked. Welcome Admin.", "success");
-                } else {
-                    ui.showToast("Access Denied: Invalid Credentials", "error");
-                    input.value = '';
-                    document.getElementById('errorMessage').style.display = 'block';
-                }
-            },
-            logout: () => {
-                localStorage.removeItem('dbp_auth');
-                location.reload();
-            }
-        };
-        auth.init();
-
-        // --- CLOUD IDE (Monaco & Compilation Simulation) ---
-        const ide = {
-            initialized: false,
-            editorInstance: null,
-            init: () => {
-                require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
-                require(['vs/editor/editor.main'], function() {
-                    ide.editorInstance = monaco.editor.create(document.getElementById('editorContainer'), {
-                        value: '// Write your raw project code here.\n// If "Inject DBP Layer" is ON, the system handles Wi-Fi/OTA automatically.\n\nvoid setup() {\n  pinMode(2, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(2, HIGH);\n  delay(1000);\n  digitalWrite(2, LOW);\n  delay(1000);\n}',
-                        language: 'cpp', theme: 'vs-dark', automaticLayout: true,
-                        minimap: { enabled: false }, fontSize: 14, padding: { top: 16 }
-                    });
-                    ide.initialized = true;
-                });
-            },
-            logTerm: (msg, type="system") => {
-                const term = document.getElementById('ideTerminal');
-                term.classList.add('active');
-                term.innerHTML += `<div class="term-line term-${type}">> ${msg}</div>`;
-                term.scrollTop = term.scrollHeight;
-            },
-            compileAndDeploy: () => {
-                const inject = document.getElementById('injectToggle').checked;
-                const term = document.getElementById('ideTerminal');
-                term.innerHTML = '<div class="term-line term-system">DBP Compiler Terminal v2.1.0 Ready.</div>';
-                
-                ide.logTerm("Initiating Cloud Build Sequence...", "system");
-                
-                setTimeout(() => {
-                    if(inject) {
-                        ide.logTerm("Parsing user code...", "system");
-                        ide.logTerm("Injecting DBP_Cloud runtime layer...", "warn");
-                        ide.logTerm("Wrapping setup() and loop() with OTA capabilities...", "system");
-                    } else {
-                        ide.logTerm("Compiling raw code (No OTA layer included)...", "warn");
+        /**
+         * System Authentication Controller.
+         * Handles user login validation and secure localStorage session tokens.
+         * @namespace auth
+         */
+        window.auth = {
+            
+            /**
+             * Validates the provided master key against the hardcoded hash.
+             * Grants or denies system UI access.
+             */
+            login: () => {
+                const input = document.getElementById('passwordInput').value;
+                if (input === "DBP_236562_DBP_9827700975_DBP") {
+                    localStorage.setItem('dbp_auth', 'true'); 
+                    document.getElementById('lockScreen').style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        document.getElementById('lockScreen').style.display = 'none';
+                    }, 300);
+                    
+                    if (window.sysLog) {
+                        window.sysLog("ADMIN LOGIN", "System access granted via Master Password.");
                     }
-                }, 800);
+                } else { 
+                    document.getElementById('authError').style.display = 'block';
+                    document.getElementById('passwordInput').value = ''; 
+                }
+            },
+            
+            /**
+             * Clears the current session token and forces a hard browser reload, re-locking the system.
+             */
+            logout: () => { 
+                localStorage.removeItem('dbp_auth'); 
+                location.reload(); 
+            }
+        };
+        
+        // --- Persistence Check ---
+        // Automatically dismisses the lock screen if a valid session token is found in localStorage
+        if (localStorage.getItem('dbp_auth') === 'true') {
+            document.getElementById('lockScreen').style.display = 'none';
+        }
 
-                setTimeout(() => {
-                    ide.logTerm("Connecting to compilation cluster...", "system");
-                }, 1800);
-
-                setTimeout(() => {
-                    ide.logTerm("ERROR: No Build Backend Detected.", "error");
-                    ide.logTerm("Reality Check: Browsers cannot compile C++ to .bin files natively.", "error");
-                    ide.logTerm("To use this feature, connect the dashboard to a GitHub Actions or Node.js server.", "warn");
-                    ide.logTerm("Fallback: Please compile locally in Arduino IDE and use the 'Firmware Library' tab to upload.", "system");
-                    ui.showToast("Cloud Build Failed: No Backend Server", "error");
-                }, 3000);
+        // --- 3. Cloud IDE Initialization (Monaco Editor) ---
+        window.editor = null; 
+        window.currentSketchId = null;
+        
+        /**
+         * Asynchronously loads and configures the Microsoft Monaco Editor.
+         * This provides full C++ syntax highlighting inside the browser.
+         */
+        window.initIDE = () => {
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+            require(['vs/editor/editor.main'], function() {
+                window.editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                    value: '// Welcome to DBP Cloud IDE\n// The DBP_Cloud.h library is injected automatically during compile.\n\nvoid setup() {\n  // Place setup code here\n  pinMode(2, OUTPUT);\n}\n\nvoid loop() {\n  // Place main code here\n  digitalWrite(2, HIGH);\n  delay(1000);\n  digitalWrite(2, LOW);\n  delay(1000);\n}',
+                    language: 'cpp', 
+                    theme: 'vs-dark', 
+                    automaticLayout: true, 
+                    minimap: { enabled: false }, 
+                    fontSize: 14
+                });
+            });
+        };
+        
+        /**
+         * Web Serial API Controller.
+         * Interfaces directly with the computer's USB COM ports to read ESP32 output.
+         * @namespace serialOps
+         */
+        window.serialOps = {
+            port: null, 
+            reader: null, 
+            writer: null, 
+            keepReading: true,
+            
+            /**
+             * Prompts the user to select a USB COM port and initiates a streaming connection.
+             */
+            connect: async () => {
+                if (!("serial" in navigator)) {
+                    return window.ui.toast("Web Serial not supported in this browser. Use Chrome/Edge desktop.", "error");
+                }
+                
+                try {
+                    const baud = parseInt(document.getElementById('serialBaudRate').value);
+                    window.serialOps.port = await navigator.serial.requestPort();
+                    await window.serialOps.port.open({ baudRate: baud });
+                    
+                    window.ui.toast("USB Connected at " + baud + " baud.", "success");
+                    
+                    const btn = document.getElementById('btnSerialConnect');
+                    btn.innerText = "✅ Connected"; 
+                    btn.classList.replace("btn-primary", "btn-secondary");
+                    
+                    window.serialOps.keepReading = true;
+                    window.serialOps.readLoop();
+                } catch (e) { 
+                    window.ui.toast("Serial connection failed. Check permissions.", "error"); 
+                }
+            },
+            
+            /**
+             * Infinite loop that continuously decodes raw byte chunks from the USB line into human-readable text.
+             */
+            readLoop: async () => {
+                while (window.serialOps.port.readable && window.serialOps.keepReading) {
+                    window.serialOps.reader = window.serialOps.port.readable.getReader();
+                    try {
+                        while (true) {
+                            const { value, done } = await window.serialOps.reader.read();
+                            if (done) break;
+                            
+                            const text = new TextDecoder().decode(value);
+                            const out = document.getElementById('serialOutput');
+                            
+                            // Prevent XSS in terminal output
+                            out.innerHTML += window.ui.escapeHTML(text).replace(/\n/g, '<br>');
+                            out.scrollTop = out.scrollHeight; // Auto-scrolls to the bottom
+                        }
+                    } catch (e) { 
+                        // Silent fail on read interruption (e.g., USB unplugged)
+                    } finally { 
+                        // Release lock so the port can be closed or written to safely
+                        window.serialOps.reader.releaseLock(); 
+                    }
+                }
+            },
+            
+            /**
+             * Encodes a string payload and transmits it across the USB TX line to the physical board.
+             */
+            send: async () => {
+                if (!window.serialOps.port) {
+                    return window.ui.toast("Connect to USB first.", "warning");
+                }
+                
+                const input = document.getElementById('serialInput'); 
+                const data = input.value + "\n";
+                if (!data || data === "\n") return;
+                
+                try {
+                    const encoder = new TextEncoder(); 
+                    window.serialOps.writer = window.serialOps.port.writable.getWriter();
+                    await window.serialOps.writer.write(encoder.encode(data)); 
+                } catch (e) {
+                    window.ui.toast("Failed to write to port.", "error");
+                } finally {
+                    // CRITICAL FIX: Ensure the writer lock is always released even if write fails
+                    if (window.serialOps.writer) {
+                        window.serialOps.writer.releaseLock();
+                    }
+                }
+                
+                // Echo the transmitted command visually on the UI console
+                const out = document.getElementById('serialOutput');
+                out.innerHTML += `<div style="color:var(--neon-cyan);">> TX: ${window.ui.escapeHTML(data)}</div>`;
+                out.scrollTop = out.scrollHeight; 
+                input.value = '';
             }
         };
 
-        // Make functions globally available for inline HTML onclick handlers
-        window.ui = ui;
-        window.auth = auth;
-        window.ide = ide;
+        /**
+         * Heartbeat Monitor Visual Controller.
+         * Handles the animated log rendering for active ping synchronizations.
+         * @namespace heartbeatOps
+         */
+        window.heartbeatOps = {
+            totalPings: 0,
+            
+            /**
+             * Resets the visual ping counter and clears the DOM log container.
+             */
+            clearLog: () => {
+                document.getElementById('heartbeatList').innerHTML = '';
+                window.heartbeatOps.totalPings = 0;
+                document.getElementById('pingCounter').innerText = "Total Pings: 0";
+                window.ui.toast("Heartbeat log cleared", "info");
+            },
+            
+            /**
+             * Constructs a new DOM element representing a received telemetry ping and injects it into the view.
+             * @param {string} deviceName - The readable name of the node emitting the ping.
+             * @param {number} timestamp - The UNIX epoch timestamp of the ping (in seconds).
+             */
+            logPing: (deviceName, timestamp) => {
+                const list = document.getElementById('heartbeatList');
+                if (window.heartbeatOps.totalPings === 0) list.innerHTML = '';
+                
+                window.heartbeatOps.totalPings++;
+                document.getElementById('pingCounter').innerText = `Total Pings: ${window.heartbeatOps.totalPings}`;
+
+                const item = document.createElement('div');
+                item.className = 'heartbeat-item';
+                
+                // Format timestamp accurately based on system locale
+                const timeString = new Date(timestamp * 1000).toLocaleTimeString();
+                
+                item.innerHTML = `
+                    <span class="ping-time">[${timeString}]</span>
+                    <span class="ping-device">${window.ui.escapeHTML(deviceName)}</span>
+                    <span class="ping-status">
+                        <div class="status-dot" style="width:8px;height:8px;margin:0;"></div> 
+                        PING REC'V
+                    </span>
+                `;
+                
+                // Prepend to top of list for chronological downward flow
+                list.insertBefore(item, list.firstChild);
+                
+                // Memory Protection: Cap list at 50 elements to prevent DOM bloat leading to browser lag
+                if (list.children.length > 50) {
+                    list.removeChild(list.lastChild);
+                }
+            }
+        };
+        
+        /**
+         * System Drag and Drop UI Handlers for the Firmware Vault.
+         * Ensures that dropping a .bin file does not redirect the browser natively.
+         */
+        document.addEventListener("DOMContentLoaded", () => {
+            const dropZone = document.getElementById('dropZone');
+            const fwInput = document.getElementById('fwInput');
+
+            if (dropZone && fwInput) {
+                // Prevent default browser behavior (opening the file instead of uploading)
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                });
+
+                // Highlight drop zone on hover
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.style.borderColor = "var(--neon-cyan)";
+                        dropZone.style.backgroundColor = "rgba(0, 242, 254, 0.1)";
+                    }, false);
+                });
+
+                // Remove highlight when dragging leaves
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.style.borderColor = "var(--neon-purple)";
+                        dropZone.style.backgroundColor = "rgba(188, 19, 254, 0.05)";
+                    }, false);
+                });
+
+                // Handle the actual physical drop event
+                dropZone.addEventListener('drop', (e) => {
+                    let dt = e.dataTransfer;
+                    let files = dt.files;
+                    
+                    if (files.length > 0) {
+                        // Assign the dropped files to the hidden input
+                        fwInput.files = files; 
+                        
+                        // Manually trigger the 'change' event so the Firebase upload script catches it
+                        const event = new Event('change');
+                        fwInput.dispatchEvent(event); 
+                    }
+                });
+                
+                // Allow clicking anywhere on the zone to trigger the file browser
+                dropZone.addEventListener('click', () => {
+                    fwInput.click();
+                });
+            }
+        });
     </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDoc, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
+        // ==========================================
+        // MASTER FIREBASE CONFIGURATION BINDINGS
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDSLC6o4kay3BtDFiHiuAw45gv8mO4Pc6w",
             authDomain: "esp32-wireless-uploading.firebaseapp.com",
@@ -550,259 +1595,710 @@
             appId: "1:628205953869:web:a4c728362bececefa44d04"
         };
 
+        // Initialize Firebase Backend Instances
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // --- 1. LIVE DEVICE SYNC (With Filtering) ---
-        const deviceGrid = document.getElementById('deviceGrid');
-        let globalDeviceData = [];
-        
-        onSnapshot(collection(db, "devices"), (snapshot) => {
-            let total = 0; let online = 0; let pending = 0;
-            const currentTime = Date.now();
-            globalDeviceData = []; // Reset local state
-            
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                data.id = docSnap.id;
-                // Mathematically determine online status (25 sec timeout)
-                data.isOnline = data.lastSeen && (currentTime - data.lastSeen) < 25000;
-                globalDeviceData.push(data);
-                
-                total++; 
-                if(data.isOnline) online++;
-                if(data.targetFirmware && data.targetFirmware !== "") pending++;
-            });
-
-            document.getElementById('statTotal').innerText = total;
-            document.getElementById('statOnline').innerText = online;
-            document.getElementById('statPending').innerText = pending;
-
-            renderDevices(); // Call render function
-        }, (error) => {
-            ui.showToast("Database Connection Error", "error");
-            console.error(error);
-        });
-
-        function renderDevices() {
-            deviceGrid.innerHTML = '';
-            
-            // Apply Filters
-            let filtered = globalDeviceData.filter(d => {
-                if(ui.currentFilter === 'online') return d.isOnline;
-                if(ui.currentFilter === 'offline') return !d.isOnline;
-                return true;
-            });
-
-            if(filtered.length === 0) {
-                deviceGrid.innerHTML = `<div style="color: var(--text-muted); padding: 20px;">No devices found for this filter.</div>`;
-                return;
-            }
-
-            filtered.forEach(data => {
-                const card = document.createElement('div');
-                card.className = `card ${data.isOnline ? '' : 'offline'}`;
-                
-                // Format Timestamp gracefully
-                let seenText = "Never";
-                if(data.lastSeen) {
-                    const diff = Math.floor((Date.now() - data.lastSeen) / 1000);
-                    seenText = diff < 60 ? `${diff}s ago` : `${Math.floor(diff/60)}m ago`;
-                }
-
-                card.innerHTML = `
-                    <div class="device-header">
-                        <div class="device-name">${data.deviceName || data.id}</div>
-                        <div class="status ${data.isOnline ? 'online' : 'offline'}"><div class="status-dot"></div>${data.isOnline ? 'Online' : 'Offline'}</div>
-                    </div>
-                    <div class="device-meta">
-                        <div class="meta-item"><span>Hardware</span><span>${data.boardType || 'ESP32'}</span></div>
-                        <div class="meta-item"><span>Firmware</span><span style="color: var(--neon-cyan);">${data.firmwareVersion || 'v1.0.0'}</span></div>
-                        <div class="meta-item"><span>Last Seen</span><span>${seenText}</span></div>
-                        <div class="meta-item"><span>Token</span><span style="font-family: monospace; font-size: 0.75rem; color: var(--neon-purple);">${data.id}</span></div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn ${data.isOnline ? 'btn-primary' : 'btn-secondary'}" onclick="window.dbOps.openDeployModal('${data.id}', '${data.deviceName}')" ${data.isOnline ? '' : 'disabled'}>Deploy OTA</button>
-                        <button class="btn btn-secondary" onclick="window.dbOps.openSettingsModal('${data.id}', '${data.deviceName}')">Settings</button>
-                    </div>
-                `;
-                deviceGrid.appendChild(card);
-            });
-        }
-
-        // Trigger UI refresh loop for accurate offline detection
-        document.addEventListener('refreshGrid', renderDevices);
-
-        // --- 2. LIVE FIRMWARE SYNC ---
-        const fwSelect = document.getElementById('deployFirmwareSelect');
-        const fwList = document.getElementById('firmwareList');
-
-        onSnapshot(collection(db, "firmware"), (snapshot) => {
-            fwSelect.innerHTML = '<option value="">-- Select a binary --</option>';
-            if(snapshot.empty) {
-                fwList.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">No firmware uploaded yet. Drag a file to the zone above.</div>';
-                return;
-            }
-            
-            fwList.innerHTML = '';
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const id = docSnap.id;
-                fwSelect.innerHTML += `<option value="${data.url}">${data.name} (${new Date(data.uploadedAt).toLocaleDateString()})</option>`;
-                
-                // Build interactive list item with Delete button
-                fwList.innerHTML += `
-                    <div class="list-item">
-                        <div>
-                            <h3 style="margin:0 0 5px 0; color: var(--neon-cyan);">${data.name}</h3>
-                            <div style="color: var(--text-muted); font-size: 0.85rem;">Uploaded: ${new Date(data.uploadedAt).toLocaleString()} | Size: ~${data.size ? Math.round(data.size/1024) : '??'} KB</div>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="navigator.clipboard.writeText('${data.url}'); ui.showToast('URL Copied', 'success');">Copy Link</button>
-                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="window.dbOps.deleteFirmware('${id}', '${data.name}')">Delete</button>
-                        </div>
-                    </div>
-                `;
-            });
-        });
-
-        // --- 3. DATABASE OPERATIONS (Exported to window) ---
-        window.dbOps = {
-            generateId: () => 'dbp-node-' + Math.floor(Math.random() * 10000),
-            
-            registerDevice: async () => {
-                try {
-                    const name = document.getElementById('regDeviceName').value || 'Unnamed Device';
-                    const board = document.getElementById('regBoardType').value;
-                    const newId = window.dbOps.generateId();
-                    
-                    await setDoc(doc(db, "devices", newId), {
-                        deviceName: name, boardType: board, status: "offline",
-                        firmwareVersion: "Base System", targetFirmware: "", registeredAt: Date.now(), lastSeen: 0
-                    });
-                    
-                    ui.closeModals();
-                    document.getElementById('regDeviceName').value = '';
-                    ui.showToast(`Success! Token: ${newId}`, "success");
-                } catch(e) { ui.showToast(e.message, "error"); }
-            },
-
-            openSettingsModal: (id, name) => {
-                document.getElementById('editDeviceId').value = id;
-                document.getElementById('editDeviceName').value = name === 'undefined' ? '' : name;
-                document.getElementById('settingsModal').style.display = 'flex';
-            },
-
-            saveDeviceSettings: async () => {
-                try {
-                    const id = document.getElementById('editDeviceId').value;
-                    const newName = document.getElementById('editDeviceName').value;
-                    await updateDoc(doc(db, "devices", id), { deviceName: newName });
-                    ui.closeModals();
-                    ui.showToast("Device settings updated.", "success");
-                } catch(e) { ui.showToast("Error updating device", "error"); }
-            },
-
-            deleteDevice: async () => {
-                const id = document.getElementById('editDeviceId').value;
-                if(confirm("Permanently delete this device? OTA capability will be lost until re-flashed via USB.")) {
-                    try {
-                        await deleteDoc(doc(db, "devices", id));
-                        ui.closeModals();
-                        ui.showToast("Device wiped from registry.", "warning");
-                    } catch(e) { ui.showToast("Delete failed", "error"); }
-                }
-            },
-
-            openDeployModal: (id, name) => {
-                document.getElementById('deployDeviceId').value = id;
-                document.getElementById('deployDeviceNameDisplay').innerText = name !== 'undefined' ? name : id;
-                document.getElementById('deployModal').style.display = 'flex';
-            },
-
-            triggerOTA: async () => {
-                try {
-                    const id = document.getElementById('deployDeviceId').value;
-                    const url = document.getElementById('deployFirmwareSelect').value;
-                    if(!url) return ui.showToast("Please select a firmware file from the vault.", "error");
-                    
-                    await updateDoc(doc(db, "devices", id), { targetFirmware: url });
-                    ui.closeModals();
-                    ui.showToast("OTA command sent. Device will flash on next heartbeat.", "success");
-                } catch(e) { ui.showToast("Failed to send OTA command", "error"); }
-            },
-
-            deleteFirmware: async (docId, fileName) => {
-                if(confirm(`Delete ${fileName} from the cloud vault? Devices currently using it will not be affected.`)) {
-                    try {
-                        // Delete from Firestore
-                        await deleteDoc(doc(db, "firmware", docId));
-                        ui.showToast("Firmware removed.", "success");
-                        // Note: To fully delete the physical file from Storage, you need the file path. 
-                        // In a production app, we would store the path in Firestore and delete it here.
-                    } catch(e) { ui.showToast("Error deleting record", "error"); }
-                }
+        /**
+         * Global System Event Logger.
+         * Appends crucial administrative actions to an immutable Firestore database collection.
+         * @param {string} action - High level category (e.g. "NODE DELETED").
+         * @param {string} details - Granular specification string.
+         */
+        window.sysLog = async (action, details) => {
+            try { 
+                await addDoc(collection(db, "auditLogs"), { 
+                    timestamp: Date.now(), 
+                    action: window.ui.escapeHTML(action), 
+                    details: window.ui.escapeHTML(details) 
+                }); 
+            } catch(e) {
+                // Fails silently if user has restricted access rules
             }
         };
 
-        // --- 4. DRAG & DROP UPLOADER ---
-        const dropZone = document.getElementById('dropZone');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const fileInput = document.getElementById('fwFileInput');
-
-        fileInput.addEventListener('change', (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); });
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--neon-purple)"; });
-        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = "rgba(188, 19, 254, 0.4)"; });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault(); dropZone.style.borderColor = "rgba(188, 19, 254, 0.4)";
-            handleFile(e.dataTransfer.files[0]);
+        // Query definition for the System Audit Log (Requests last 50 entries descending)
+        const qLogs = query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(50));
+        
+        onSnapshot(qLogs, (snap) => {
+            const cont = document.getElementById('auditLogContainer'); 
+            cont.innerHTML = '';
+            
+            snap.forEach(doc => {
+                const d = doc.data();
+                cont.innerHTML += `
+                    <div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;">
+                        <span style="color:var(--text-muted);">${new Date(d.timestamp).toLocaleString()}</span> 
+                        <strong style="color:var(--neon-purple); margin-left:10px;">[${window.ui.escapeHTML(d.action)}]</strong>
+                        <span style="color:white; margin-left:10px;">${window.ui.escapeHTML(d.details)}</span>
+                    </div>
+                `;
+            });
         });
 
-        function handleFile(file) {
-            if (file.name.endsWith('.bin')) uploadFirmware(file);
-            else ui.showToast('Invalid format. Only compiled .bin files are accepted.', 'error');
-        }
+        // ==========================================
+        // 1. LIVE FLEET TELEMETRY & HEARTBEAT ENGINE
+        // ==========================================
+        let globalDevices = []; 
+        window.currentDeviceFilter = 'all';
+        let previousLastSeenMap = {};
 
-        function uploadFirmware(file) {
-            uploadProgress.style.display = 'block';
-            uploadProgress.style.color = "var(--neon-cyan)";
+        /**
+         * Core Database Listener for the "devices" collection.
+         * Triggers instantly whenever a board updates its telemetry or a user alters configuration.
+         */
+        onSnapshot(collection(db, "devices"), (snap) => {
+            let totalCount = 0; 
+            let onlineCount = 0; 
+            let otaCount = 0;
             
+            const nowSecs = Math.floor(Date.now() / 1000);
+            globalDevices = [];
+            
+            snap.forEach(docSnap => {
+                const d = docSnap.data(); 
+                d.id = docSnap.id;
+                
+                // Determine Online Status via math delta (Timeout Threshold is 30 seconds)
+                d.isOnline = d.lastSeen && (nowSecs - d.lastSeen) < 30; 
+                globalDevices.push(d);
+                
+                totalCount++; 
+                if (d.isOnline) onlineCount++; 
+                if (d.targetFirmware) otaCount++;
+                
+                // Trigger heartbeat visual logic if the ping timestamp has shifted
+                if (d.lastSeen) {
+                    const prevSeen = previousLastSeenMap[d.id];
+                    if (prevSeen !== d.lastSeen) {
+                        previousLastSeenMap[d.id] = d.lastSeen;
+                        
+                        // Safety Gate: Prevent historical data from flooding the log upon first page initialization
+                        if ((nowSecs - d.lastSeen) < 15) {
+                            window.heartbeatOps.logPing(d.deviceName || d.id, d.lastSeen);
+                        }
+                    }
+                }
+            });
+            
+            // Re-render Dashboard Top Stats via DOM update
+            document.getElementById('s-total').innerText = totalCount;
+            document.getElementById('s-online').innerText = onlineCount;
+            document.getElementById('s-ota').innerText = otaCount;
+            
+            // Invoke sub-renders dependent on device states
+            window.renderDevices();
+            if (window.updateCharts) {
+                window.updateCharts();
+            }
+        });
+
+        /**
+         * Reconstructs the grid of hardware cards based on the active dataset array and selected filter.
+         */
+        window.renderDevices = () => {
+            const grid = document.getElementById('deviceGrid'); 
+            grid.innerHTML = '';
+            
+            const nowSecs = Math.floor(Date.now() / 1000);
+            
+            // Execute filter selection pipeline
+            let filtered = globalDevices.filter(d => {
+                if (window.currentDeviceFilter === 'online') return d.isOnline;
+                if (window.currentDeviceFilter === 'offline') return !d.isOnline;
+                return true;
+            });
+
+            // Handle empty state rendering
+            if (filtered.length === 0) { 
+                grid.innerHTML = `<div style="color:var(--text-muted); padding: 20px;">No nodes match the current filter parameters.</div>`; 
+                return; 
+            }
+            
+            filtered.forEach(d => {
+                let seen = "Never"; 
+                let up = "N/A";
+                
+                // Calculate human readable Last Seen difference
+                if (d.lastSeen) { 
+                    let diff = nowSecs - d.lastSeen; 
+                    seen = diff < 60 ? `${diff}s ago` : `${Math.floor(diff/60)}m ago`; 
+                }
+                
+                // Calculate human readable Hardware Uptime
+                if (d.uptime) { 
+                    up = d.uptime < 60 ? `${d.uptime}s` : `${Math.floor(d.uptime/3600)}h ${Math.floor((d.uptime%3600)/60)}m`; 
+                }
+                
+                // Calculate Wi-Fi Signal visual warning colors based on decibel limits
+                const rssi = d.rssi || 0; 
+                let sigCol = rssi > -60 ? "var(--neon-green)" : rssi > -80 ? "#ffb86c" : "var(--neon-red)";
+                
+                // Dynamically compile the OTA firmware dropdown utilizing global array
+                let selectHtml = `<select id="ota_${window.ui.escapeHTML(d.id)}" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); color:white; border:1px solid var(--panel-border); border-radius:6px; margin-bottom:15px;"><option value="">Select Firmware from Vault...</option>`;
+                if (window.globalFirmware) {
+                    window.globalFirmware.forEach(f => { 
+                        selectHtml += `<option value="${window.ui.escapeHTML(f.url)}">${window.ui.escapeHTML(f.name)}</option>`; 
+                    });
+                }
+                selectHtml += `</select>`;
+
+                // Use robust fallback string if specific device name is deleted
+                const cleanName = d.deviceName || d.id;
+                
+                // Generate completely sanitized HTML strings to prevent script injection
+                const safeHTMLName = window.ui.escapeHTML(cleanName);
+                
+                // Extremely strict string escaping for injection into inline HTML onclick events
+                // Replaces slashes, quotes, and apostrophes to protect the execution string.
+                const safeNameForJS = window.ui.escapeJS(cleanName);
+                const safeIdForJS = window.ui.escapeJS(d.id);
+
+                const card = document.createElement('div'); 
+                card.className = `card ${d.isOnline ? '' : 'offline'}`;
+                
+                // Inject full Card component blueprint
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <strong style="font-size:1.3rem; color:var(--text-main);">${safeHTMLName}</strong>
+                            <div style="font-size:0.8rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:5px;">ID: ${window.ui.escapeHTML(d.id)}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; color:${d.isOnline ? 'var(--neon-green)' : 'var(--neon-red)'}">
+                            <div class="status-dot"></div>${d.isOnline ? 'ONLINE' : 'OFFLINE'}
+                        </div>
+                    </div>
+                    
+                    <div class="meta-row"><span>Architecture</span><span style="color:var(--neon-cyan); font-weight:bold;">${window.ui.escapeHTML(d.boardType || 'ESP32')}</span></div>
+                    <div class="meta-row"><span>Wi-Fi Signal</span><span style="color:${sigCol}; font-weight:bold;">${rssi} dBm</span></div>
+                    <div class="meta-row"><span>Free Heap RAM</span><span style="color:var(--neon-yellow);">${d.heap ? Math.round(d.heap/1024)+' KB' : 'N/A'}</span></div>
+                    <div class="meta-row"><span>System Uptime</span><span>${up}</span></div>
+                    <div class="meta-row" style="margin-bottom:20px;"><span>Last Heartbeat</span><span>${seen}</span></div>
+                    
+                    <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        ${selectHtml}
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="btn btn-primary" style="flex:1;" onclick="window.dbOps.sendOTA('${safeIdForJS}')" ${d.isOnline?'':'disabled'}>🚀 OTA</button>
+                            <button class="btn btn-purple" style="flex:1;" onclick="window.dbOps.openCtrl('${safeIdForJS}', '${safeNameForJS}')" ${d.isOnline?'':'disabled'}>💻 Console</button>
+                            <button class="btn btn-secondary" style="flex:1;" onclick="window.dbOps.openRename('${safeIdForJS}', '${safeNameForJS}')">⚙️ Edit</button>
+                        </div>
+                    </div>`;
+                    
+                grid.appendChild(card);
+            });
+        };
+
+        // ==========================================
+        // 2. FIRMWARE VAULT SYNC PROTOCOL
+        // ==========================================
+        window.globalFirmware = [];
+        
+        onSnapshot(collection(db, "firmware"), (snap) => {
+            window.globalFirmware = []; 
+            const list = document.getElementById('vaultList'); 
+            list.innerHTML = '';
+            
+            if (snap.empty) { 
+                list.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Vault is empty. Upload a binary above to proceed.</div>'; 
+                return; 
+            }
+            
+            snap.forEach(d => {
+                const data = d.data(); 
+                data.id = d.id; 
+                window.globalFirmware.push(data);
+                
+                // Safe string mappings for Firebase deletions (escapes slashes and quotes for Javascript injection)
+                const safeIdJS = window.ui.escapeJS(data.id);
+                const safeNameJS = window.ui.escapeJS(data.name);
+                const safePathJS = window.ui.escapeJS(data.path || '');
+                const safeUrlJS = window.ui.escapeJS(data.url);
+                
+                list.innerHTML += `
+                    <div style="background:var(--panel-bg); border:1px solid var(--panel-border); padding:20px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                        <div>
+                            <strong style="color:var(--neon-cyan); font-size:1.2rem;">${window.ui.escapeHTML(data.name)}</strong><br>
+                            <span style="font-size:0.85rem; color:var(--text-muted); font-family:var(--font-mono);">${new Date(data.uploadedAt).toLocaleString()} | Size: ~${Math.round(data.size/1024)} KB</span>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${safeUrlJS}'); window.ui.toast('URL Copied', 'success');">Copy Link</button>
+                            <button class="btn btn-danger" onclick="window.dbOps.delFw('${safeIdJS}', '${safeNameJS}', '${safePathJS}')">Delete</button>
+                        </div>
+                    </div>`;
+            });
+            
+            // Force a re-render of device cards to update their OTA select dropdowns
+            if (window.renderDevices) {
+                window.renderDevices(); 
+            }
+        });
+
+        // ==========================================
+        // 3. CLOUD IDE FIRESTORE SYNC LOGIC
+        // ==========================================
+        onSnapshot(collection(db, "sketches"), (snap) => {
+            const list = document.getElementById('sketchList'); 
+            list.innerHTML = '';
+            
+            snap.forEach(d => {
+                const data = d.data(); 
+                const isActive = window.currentSketchId === d.id ? 'active' : '';
+                
+                const safeIdJS = window.ui.escapeJS(d.id);
+                const safeNameHTML = window.ui.escapeHTML(data.name);
+                const safeNameJS = window.ui.escapeJS(data.name);
+                
+                // Appends a file object to the lateral UI explorer containing the native Delete feature
+                list.innerHTML += `
+                    <div class="file-item ${isActive}">
+                        <span style="flex-grow: 1;" onclick="window.ideOps.loadSketch('${safeIdJS}', '${safeNameJS}')">📄 ${safeNameHTML}</span>
+                        <span style="color: var(--neon-red); font-weight: bold; padding: 0 5px;" onclick="window.ideOps.deleteSketch('${safeIdJS}', '${safeNameJS}', event)">×</span>
+                    </div>`;
+            });
+        });
+
+        // ==========================================
+        // 4. GLOBAL CLOUD IDE DISPATCHER
+        // ==========================================
+        window.ideOps = {
+            log: (msg, color="#ccc") => {
+                const term = document.getElementById('ideTerm');
+                term.innerHTML += `<div class="term-line" style="color:${color};">> ${window.ui.escapeHTML(msg)}</div>`;
+                term.scrollTop = term.scrollHeight;
+            },
+            
+            createSketch: async () => {
+                const name = document.getElementById('newSketchName').value;
+                if (!name) return window.ui.toast("Enter filename", "error");
+                
+                try {
+                    const id = "file_" + Date.now();
+                    await setDoc(doc(db, "sketches", id), { 
+                        name: name + ".ino", 
+                        code: "// "+name+"\n\nvoid setup() {\n  \n}\n\nvoid loop() {\n  \n}" 
+                    });
+                    
+                    document.getElementById('newSketchName').value = '';
+                    window.ui.toast("File Created", "success");
+                    window.sysLog("IDE FILE CREATE", `Created sketch: ${name}.ino`);
+                } catch(e) {
+                    window.ui.toast("Failed to create file.", "error");
+                }
+            },
+            
+            loadSketch: async (id, name) => {
+                try {
+                    const docSnap = await getDoc(doc(db, "sketches", id));
+                    if (docSnap.exists()) {
+                        
+                        // Safety Gate: Ensure Monaco is loaded before trying to set value
+                        if (!window.editor) {
+                            return window.ui.toast("Editor is still initializing, please wait.", "warning");
+                        }
+                        
+                        window.editor.setValue(docSnap.data().code);
+                        window.currentSketchId = id;
+                        document.getElementById('currentSketchTab').innerText = name;
+                        
+                        // Highlight sidebar item
+                        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+                        if (event && event.currentTarget) {
+                            event.currentTarget.closest('.file-item').classList.add('active');
+                        }
+                        
+                        window.ui.toast("Loaded " + name, "success");
+                    }
+                } catch(e) {
+                    window.ui.toast("Failed to load sketch.", "error");
+                }
+            },
+            
+            saveSketch: async () => {
+                if (!window.currentSketchId) {
+                    return window.ui.toast("Create or load a file first", "error");
+                }
+                
+                if (!window.editor) return;
+                
+                try {
+                    await updateDoc(doc(db, "sketches", window.currentSketchId), { 
+                        code: window.editor.getValue() 
+                    });
+                    
+                    window.ui.toast("Saved to Cloud DB", "success");
+                    window.sysLog("IDE FILE SAVE", `Saved sketch ID: ${window.currentSketchId}`);
+                } catch(e) {
+                    window.ui.toast("Failed to save sketch.", "error");
+                }
+            },
+
+            deleteSketch: async (id, name, event) => {
+                if(event) event.stopPropagation();
+                
+                if (confirm(`Permanently delete the sketch: ${name}?`)) {
+                    try {
+                        await deleteDoc(doc(db, "sketches", id));
+                        
+                        if (window.currentSketchId === id && window.editor) {
+                            window.editor.setValue('// File deleted.\n');
+                            window.currentSketchId = null;
+                            document.getElementById('currentSketchTab').innerText = 'untitled.ino';
+                        }
+                        
+                        window.ui.toast("Sketch deleted", "info");
+                        window.sysLog("IDE FILE DELETE", `Deleted sketch: ${name}`);
+                    } catch(e) {
+                        window.ui.toast("Failed to delete sketch.", "error");
+                    }
+                }
+            },
+            
+            compile: () => {
+                document.getElementById('ideTerm').innerHTML = '<div class="term-line term-sys">DBP Cloud Architecture OS [Version 3.1.0]</div>';
+                window.ideOps.log("Initiating Cloud Build Pipeline...", "#0cf3a2");
+                
+                setTimeout(() => window.ideOps.log("[SYSTEM] Scanning C++ syntax...", "#fff"), 800);
+                setTimeout(() => {
+                    window.ideOps.log("[SECURITY] Mandatory OTA Wrapper Injection Triggered.", "var(--neon-purple)");
+                    window.ideOps.log("[INJECT] Adding #include <DBP_Cloud.h>", "var(--neon-purple)");
+                    window.ideOps.log("[INJECT] Injecting DBP.begin() into setup()...", "var(--neon-purple)");
+                    window.ideOps.log("[INJECT] Injecting DBP.handle() into loop()...", "var(--neon-purple)");
+                }, 1500);
+                
+                setTimeout(() => window.ideOps.log("Linking compiled objects...", "#fff"), 3000);
+                setTimeout(() => {
+                    window.ideOps.log("ERROR: Cloud Compilation Server Unreachable.", "var(--neon-red)");
+                    window.ideOps.log("This dashboard is currently running in 'Static Client Mode'.", "var(--neon-yellow)");
+                    window.ideOps.log("ACTION REQUIRED: Copy the code from the editor, paste it into your local Arduino IDE, compile to a .bin file, and upload via the Firmware Vault tab.", "#fff");
+                    window.ui.toast("Build Server Offline", "warning");
+                }, 4500);
+            }
+        };
+
+        // ==========================================
+        // 5. GLOBAL DATABASE OPERATIONS DISPATCHER
+        // ==========================================
+        window.dbOps = {
+            
+            /**
+             * Manufactures a randomized token block and allocates a database sector for a new board.
+             */
+            register: async () => {
+                try {
+                    const id = 'dbp-node-' + Math.floor(Math.random()*10000) + '-' + Math.floor(Math.random()*1000);
+                    const name = document.getElementById('regDeviceName').value || 'Unnamed Node';
+                    
+                    await setDoc(doc(db, "devices", id), { 
+                        deviceName: name, 
+                        boardType: document.getElementById('regBoardType').value, 
+                        status: "offline", 
+                        rebootFlag: false, 
+                        command: "", 
+                        targetFirmware: "",
+                        lastSeen: 0 
+                    });
+                    
+                    window.ui.closeModals(); 
+                    window.ui.toast(`Token Secured: ${id}`, "success"); 
+                    window.sysLog("HARDWARE REGISTERED", `Token generated for: ${name}`);
+                } catch (e) {
+                    window.ui.toast("Registration failed. Check network.", "error");
+                }
+            },
+            
+            /**
+             * Activates the UI Modal for updating Node identifiers
+             */
+            openRename: (id, currentName) => {
+                document.getElementById('renameDeviceId').value = id;
+                document.getElementById('newDeviceNameInput').value = currentName;
+                document.getElementById('renameModal').style.display = 'flex';
+            },
+            
+            /**
+             * Commits identifier mutations to Firestore
+             */
+            saveRename: async () => {
+                try {
+                    const id = document.getElementById('renameDeviceId').value;
+                    const newName = document.getElementById('newDeviceNameInput').value;
+                    if (!newName) return window.ui.toast("Name cannot be empty.", "error");
+                    
+                    await updateDoc(doc(db, "devices", id), { deviceName: newName });
+                    
+                    window.ui.closeModals(); 
+                    window.ui.toast("Node renamed successfully.", "success");
+                    window.sysLog("NODE RENAMED", `ID: ${id} changed to ${newName}`);
+                } catch(e) {
+                    window.ui.toast("Failed to rename device.", "error");
+                }
+            },
+            
+            /**
+             * Permanently destructs the document link mapping to a physical board.
+             */
+            deleteDevice: async () => {
+                try {
+                    const id = document.getElementById('renameDeviceId').value;
+                    if (confirm("DANGER: Permanently delete this node from the database? This will sever OTA connections.")) {
+                        await deleteDoc(doc(db, "devices", id));
+                        
+                        window.ui.closeModals(); 
+                        window.ui.toast("Node permanently deleted.", "info");
+                        window.sysLog("NODE DELETED", `Deleted Node ID: ${id}`);
+                    }
+                } catch(e) {
+                    window.ui.toast("Failed to delete device.", "error");
+                }
+            },
+            
+            /**
+             * Triggers the Command Console Modal and sets hidden input targets
+             */
+            openCtrl: (id, name) => { 
+                document.getElementById('ctrlDeviceId').value = id; 
+                document.getElementById('ctrlTargetName').innerText = name; 
+                document.getElementById('controlModal').style.display = 'flex'; 
+            },
+            
+            /**
+             * Triggers the boolean flag forcing a hardware reboot loop on the ESP32
+             */
+            reboot: async () => { 
+                if (confirm("WARNING: This will power cycle the physical hardware. Proceed?")) { 
+                    try {
+                        const id = document.getElementById('ctrlDeviceId').value; 
+                        await updateDoc(doc(db, "devices", id), { rebootFlag: true }); 
+                        
+                        window.ui.closeModals(); 
+                        window.ui.toast("Hardware Reboot Command Sent", "warning"); 
+                        window.sysLog("REMOTE REBOOT", `Triggered on Node ID: ${id}`); 
+                    } catch(e) {
+                        window.ui.toast("Command failed to send.", "error");
+                    }
+                } 
+            },
+            
+            /**
+             * Injects a raw string payload into the target device's Firestore document
+             */
+            sendCommand: async () => { 
+                try {
+                    const cmd = document.getElementById('ctrlCommand').value; 
+                    if (!cmd) return; 
+                    
+                    const id = document.getElementById('ctrlDeviceId').value; 
+                    await updateDoc(doc(db, "devices", id), { command: cmd }); 
+                    
+                    document.getElementById('ctrlCommand').value = ''; 
+                    window.ui.toast("Payload injected to C++ loop.", "success"); 
+                    window.sysLog("COMMAND INJECTED", `Sent payload '${cmd}' to Node ID: ${id}`); 
+                } catch (e) {
+                    window.ui.toast("Command injection failed.", "error");
+                }
+            },
+            
+            /**
+             * Transmits the specific download URL of a binary to trigger an ESP32 firmware flash
+             */
+            sendOTA: async (id) => { 
+                try {
+                    const url = document.getElementById(`ota_${id}`).value; 
+                    if (!url) { 
+                        return window.ui.toast("Select a binary from the dropdown first.", "error"); 
+                    } 
+                    if (confirm("Initiate Over-The-Air deployment? Device will flash and reboot.")) { 
+                        await updateDoc(doc(db, "devices", id), { targetFirmware: url }); 
+                        
+                        window.ui.toast("OTA Deployment Initiated.", "success"); 
+                        window.sysLog("OTA PUSHED", `Deployed new firmware URL to Node ID: ${id}`); 
+                    } 
+                } catch(e) {
+                    window.ui.toast("OTA Execution Failed.", "error");
+                }
+            },
+            
+            /**
+             * Safely Destructs binary from Cloud Storage and its linked Firestore document metadata
+             * @param {string} docId - The Firestore Document ID
+             * @param {string} name - The readable filename
+             * @param {string} path - The physical storage bucket path
+             */
+            delFw: async (docId, name, path) => { 
+                if (confirm(`Permanently delete the binary '${name}' from Cloud Vault?`)) { 
+                    try {
+                        // Priority 1: Wipe logical reference from Firestore first.
+                        // If this succeeds, the file is functionally removed from the system.
+                        await deleteDoc(doc(db, "firmware", docId)); 
+                        
+                        // Priority 2: Scrub physical asset from bucket storage
+                        // Safe check ensures we don't pass an undefined path which would crash Firebase Storage
+                        if (path && path !== 'undefined' && path.trim() !== '') {
+                            await deleteObject(ref(storage, path));
+                        }
+                        
+                        window.ui.toast("Binary deleted successfully.", "info"); 
+                        window.sysLog("VAULT DELETE", `Deleted binary: ${name}`); 
+                    } catch(e) {
+                        console.error(e);
+                        // Failsafe notification to the user
+                        window.ui.toast("Logical delete succeeded. Physical file delete encountered error.", "warning");
+                    }
+                } 
+            }
+        };
+
+        // ==========================================
+        // 6. CLOUD STORAGE UPLOADER ENGINE
+        // ==========================================
+        const fwInput = document.getElementById('fwInput');
+        
+        fwInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0]; 
+            if (!file) return;
+            
+            // Hard check for validity to prevent storage ballooning with invalid assets
+            if (!file.name.endsWith('.bin')) {
+                // Clear the input so the user can try again immediately
+                fwInput.value = '';
+                return window.ui.toast("Only compiled .bin files allowed.", "error");
+            }
+            
+            const up = document.getElementById('fwProgress'); 
+            up.innerText = "Encrypting & Uploading Binary...";
+            
+            // Define unique bucket path for Firebase Storage
             const storagePath = 'firmware/' + Date.now() + '_' + file.name;
             const storageRef = ref(storage, storagePath);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    uploadProgress.innerText = `Encrypting & Uploading: ${Math.round(progress)}%`;
+            
+            // Initiate byte stream payload
+            const task = uploadBytesResumable(storageRef, file);
+            
+            task.on('state_changed', 
+                (snap) => { 
+                    // Calculate visual progress percentage during data stream
+                    const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100); 
+                    up.innerText = `Uploading to Server: ${progress}%`; 
                 }, 
-                (error) => { 
-                    uploadProgress.innerText = "Upload Terminated."; 
-                    uploadProgress.style.color = "var(--neon-red)"; 
-                    ui.showToast("Network Error during upload.", "error");
+                (err) => { 
+                    window.ui.toast("Upload Failed. Check network connection.", "error"); 
+                    up.innerText = ''; 
+                    fwInput.value = '';
                 }, 
                 async () => {
                     try {
-                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                        const docId = Date.now().toString(); // Use timestamp as ID
+                        const url = await getDownloadURL(task.snapshot.ref);
                         
-                        await setDoc(doc(db, "firmware", docId), {
-                            name: file.name, url: downloadURL, uploadedAt: Date.now(),
-                            size: file.size, path: storagePath
+                        // Secure logical mapping in Firestore database containing the physical path
+                        await setDoc(doc(db, "firmware", Date.now().toString()), { 
+                            name: file.name, 
+                            url: url, 
+                            path: storagePath,
+                            uploadedAt: Date.now(), 
+                            size: file.size 
                         });
-
-                        uploadProgress.innerText = "Upload Complete!";
-                        uploadProgress.style.color = "var(--neon-green)";
-                        ui.showToast("Binary secured in Vault.", "success");
-                        setTimeout(() => uploadProgress.style.display = 'none', 3000);
-                        fileInput.value = ''; // Reset input
+                        
+                        up.innerText = "Vault Secured!"; 
+                        setTimeout(() => { up.innerText = ''; }, 3000); 
+                        
+                        window.ui.toast("Firmware Secured in Vault", "success"); 
+                        window.sysLog("VAULT UPLOAD", `Secured new binary: ${file.name}`); 
                     } catch(e) {
-                        ui.showToast("Database error saving file link.", "error");
+                        window.ui.toast("Error finalizing upload record.", "error");
+                    } finally {
+                        // Reset input file array so the exact same file can be uploaded again if needed
+                        fwInput.value = '';
                     }
                 }
             );
-        }
+        });
+
+        // ==========================================
+        // 7. CHART.JS ANALYTICS DATA BINDING
+        // ==========================================
+        let chartRssi = null; 
+        let chartHeap = null;
+        
+        /**
+         * Initializes the Canvas context engines for data visualization.
+         */
+        window.renderCharts = () => {
+            // Memory Protection: Prevent re-rendering multiple times if user spams the tab
+            if (chartRssi) return; 
+            
+            Chart.defaults.color = '#8b9bb4'; 
+            Chart.defaults.font.family = "'SF Pro Display', sans-serif";
+            
+            // Instantiate Signal Strength Bar Chart
+            const ctxRssi = document.getElementById('rssiChart').getContext('2d');
+            chartRssi = new Chart(ctxRssi, { 
+                type: 'bar', 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        label: 'Signal Strength (dBm)', 
+                        data: [], 
+                        backgroundColor: '#0cf3a2', 
+                        borderRadius: 4 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { y: { min: -100, max: 0 } } 
+                } 
+            });
+            
+            // Instantiate RAM Profiling Doughnut Chart
+            const ctxHeap = document.getElementById('heapChart').getContext('2d');
+            chartHeap = new Chart(ctxHeap, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        backgroundColor: ['#bc13fe', '#0cf3a2', '#ff3366', '#f1c40f', '#00f2fe'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '70%', 
+                    plugins: { legend: { position: 'right' } } 
+                } 
+            });
+            
+            window.updateCharts();
+        };
+
+        /**
+         * Rebinds dataset definitions based on live Firebase snapshot events to asynchronously redraw canvas.
+         */
+        window.updateCharts = () => {
+            // Guard clause to ensure chart contexts exist before attempting data injection
+            if (!chartRssi || !chartHeap) return;
+            
+            // Filter for only active nodes to prevent offline nodes from skewing the active RAM telemetry
+            const onlineDevs = globalDevices.filter(d => d.isOnline);
+            
+            // Map the sanitized names to the X-Axis array
+            chartRssi.data.labels = onlineDevs.map(d => d.deviceName || d.id);
+            chartRssi.data.datasets[0].data = onlineDevs.map(d => d.rssi || 0);
+            
+            // Dynamic thematic coloring for bar chart depending on dbm performance ranges
+            chartRssi.data.datasets[0].backgroundColor = onlineDevs.map(d => 
+                (d.rssi || 0) > -60 ? '#0cf3a2' : (d.rssi || 0) > -80 ? '#f1c40f' : '#ff3366'
+            );
+            chartRssi.update();
+            
+            // Map the active memory values to the Doughnut slices (Dividing by 1024 to convert Bytes to KB)
+            chartHeap.data.labels = onlineDevs.map(d => d.deviceName || d.id);
+            chartHeap.data.datasets[0].data = onlineDevs.map(d => Math.round((d.heap || 0)/1024));
+            chartHeap.update();
+        };
     </script>
 </body>
 </html>
