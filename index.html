@@ -1,2304 +1,1337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DBP Esp Uploader - Enterprise Master Console</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DBP — Premium Command Center</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+
+<script>
+    if(localStorage.getItem('dbp_unlocked') === 'true') {
+        document.documentElement.classList.add('system-unlocked');
+    }
+</script>
+
+<style>
+/* ==========================================================================
+   1. ROOT VARIABLES & CORE STYLES
+   ========================================================================== */
+:root {
+    --bg: #0a0e17;
+    --card: rgba(19, 23, 32, 0.65);
+    --card-hover: rgba(30, 36, 50, 0.9);
+    --text: #e6eef8;
+    --muted: #8b95ab;
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --accent-glow: rgba(99, 102, 241, 0.45);
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
     
-    <style>
-        /* ==========================================================================
-           1. CORE CSS VARIABLES & GLOBAL STYLES
-           ========================================================================== */
-        :root { 
-            --bg-gradient: linear-gradient(135deg, #050505 0%, #0a0a2a 100%); 
-            --panel-bg: rgba(15, 18, 25, 0.6); 
-            --panel-border: rgba(0, 242, 254, 0.15); 
-            --neon-cyan: #00f2fe; 
-            --neon-purple: #bc13fe; 
-            --neon-green: #0cf3a2; 
-            --neon-red: #ff3366; 
-            --neon-yellow: #f1c40f;
-            --text-main: #ffffff; 
-            --text-muted: #8b9bb4; 
-            --font-main: 'SF Pro Display', system-ui, sans-serif; 
-            --font-mono: 'Fira Code', 'Consolas', monospace; 
-        }
-        
-        * { 
-            box-sizing: border-box; 
-            transition: all 0.2s ease; 
-        }
-        
-        body { 
-            background: var(--bg-gradient); 
-            background-attachment: fixed; 
-            color: var(--text-main); 
-            font-family: var(--font-main); 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-        
-        /* Custom Scrollbars for a seamless UI experience */
-        ::-webkit-scrollbar { 
-            width: 8px; 
-            height: 8px; 
-        } 
-        
-        ::-webkit-scrollbar-track { 
-            background: transparent; 
-        } 
-        
-        ::-webkit-scrollbar-thumb { 
-            background: rgba(255, 255, 255, 0.1); 
-            border-radius: 4px; 
-        } 
-        
-        ::-webkit-scrollbar-thumb:hover { 
-            background: var(--neon-cyan); 
-        }
-        
-        /* ==========================================================================
-           2. AUTHENTICATION LOCK SCREEN
-           ========================================================================== */
-        #lockScreen { 
-            position: fixed; 
-            inset: 0; 
-            background: #000; 
-            z-index: 9999; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        }
-
-        .lock-box { 
-            background: var(--panel-bg); 
-            border: 1px solid var(--neon-cyan); 
-            padding: 50px; 
-            border-radius: 12px; 
-            text-align: center; 
-            width: 90%;
-            max-width: 450px; 
-            box-shadow: 0 0 50px rgba(0, 242, 254, 0.1); 
-            backdrop-filter: blur(10px);
-        }
-
-        .lock-box h1 { 
-            margin: 0; 
-            font-size: 2.5rem; 
-            letter-spacing: 2px; 
-            color: var(--text-main); 
-        }
-
-        .lock-box h2 { 
-            color: var(--neon-cyan); 
-            margin: 0 0 10px 0; 
-            font-size: 1.2rem; 
-            letter-spacing: 4px;
-        }
-
-        .lock-box input { 
-            width: 100%; 
-            padding: 18px; 
-            margin: 30px 0; 
-            background: rgba(0, 0, 0, 0.8); 
-            border: 1px solid var(--panel-border); 
-            color: white; 
-            border-radius: 8px; 
-            text-align: center; 
-            font-size: 1.2rem; 
-            letter-spacing: 2px; 
-        }
-
-        .lock-box input:focus { 
-            border-color: var(--neon-cyan); 
-            outline: none; 
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); 
-        }
-        
-        /* ==========================================================================
-           3. UI COMPONENTS & BUTTONS
-           ========================================================================== */
-        .btn { 
-            padding: 12px 24px; 
-            border-radius: 6px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            border: none; 
-            text-transform: uppercase; 
-            font-size: 0.85rem; 
-            letter-spacing: 1px; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px;
-        }
-
-        .btn-primary { 
-            background: rgba(0, 242, 254, 0.1); 
-            border: 1px solid var(--neon-cyan); 
-            color: var(--neon-cyan); 
-        } 
-
-        .btn-primary:hover:not(:disabled) { 
-            background: var(--neon-cyan); 
-            color: #000; 
-            box-shadow: 0 0 20px var(--neon-cyan); 
-        }
-
-        .btn-secondary { 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid var(--panel-border); 
-            color: var(--text-muted); 
-        } 
-
-        .btn-secondary:hover:not(:disabled) { 
-            border-color: white; 
-            color: white; 
-            background: rgba(255, 255, 255, 0.1); 
-        }
-
-        .btn-danger { 
-            background: rgba(255, 51, 102, 0.1); 
-            border: 1px solid var(--neon-red); 
-            color: var(--neon-red); 
-        } 
-
-        .btn-danger:hover:not(:disabled) { 
-            background: var(--neon-red); 
-            color: #000; 
-            box-shadow: 0 0 20px var(--neon-red); 
-        }
-
-        .btn-purple { 
-            background: rgba(188, 19, 254, 0.1); 
-            border: 1px solid var(--neon-purple); 
-            color: var(--neon-purple); 
-        } 
-
-        .btn-purple:hover:not(:disabled) { 
-            background: var(--neon-purple); 
-            color: #000; 
-            box-shadow: 0 0 20px var(--neon-purple); 
-        }
-
-        .btn:disabled { 
-            opacity: 0.4; 
-            cursor: not-allowed; 
-            filter: grayscale(100%); 
-        }
-
-        /* Form Elements: Inputs & Select Dropdowns */
-        input[type="text"], 
-        input[type="number"], 
-        select {
-            width: 100%; 
-            padding: 12px; 
-            background: rgba(0, 0, 0, 0.5); 
-            border: 1px solid var(--panel-border); 
-            color: white; 
-            border-radius: 6px; 
-            outline: none; 
-            font-family: var(--font-main);
-        }
-
-        input:focus, 
-        select:focus { 
-            border-color: var(--neon-cyan); 
-        }
-
-        /* ==========================================================================
-           4. LAYOUT & NAVIGATION
-           ========================================================================== */
-        nav { 
-            width: 280px; 
-            background: rgba(0, 0, 0, 0.5); 
-            border-right: 1px solid var(--panel-border); 
-            padding: 30px 20px; 
-            display: flex; 
-            flex-direction: column; 
-            backdrop-filter: blur(10px); 
-            z-index: 100;
-        }
-
-        .brand { 
-            font-size: 1.5rem; 
-            font-weight: 900; 
-            color: white; 
-            letter-spacing: 2px; 
-            margin-bottom: 40px; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-        }
-
-        .brand-icon { 
-            width: 24px; 
-            height: 24px; 
-            background: var(--neon-purple); 
-            border-radius: 6px; 
-            box-shadow: 0 0 15px var(--neon-purple); 
-        }
-        
-        .nav-item { 
-            color: var(--text-muted); 
-            padding: 14px 15px; 
-            border-radius: 8px; 
-            margin-bottom: 8px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            font-weight: 500; 
-        }
-
-        .nav-item:hover, 
-        .nav-item.active { 
-            background: rgba(0, 242, 254, 0.05); 
-            color: var(--neon-cyan); 
-            border-left: 4px solid var(--neon-cyan); 
-            padding-left: 11px;
-        }
-        
-        main { 
-            flex-grow: 1; 
-            padding: 40px; 
-            overflow-y: auto; 
-            position: relative; 
-        }
-
-        .view-section { 
-            display: none; 
-            flex-direction: column; 
-            height: 100%; 
-            animation: fade 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); 
-        } 
-
-        .view-section.active { 
-            display: flex; 
-        }
-
-        @keyframes fade { 
-            from { 
-                opacity: 0; 
-                transform: translateY(10px); 
-            } 
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            } 
-        }
-
-        /* ==========================================================================
-           5. DASHBOARD & DEVICE CARDS
-           ========================================================================== */
-        .header-box { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-end; 
-            margin-bottom: 30px; 
-            border-bottom: 1px solid var(--panel-border); 
-            padding-bottom: 20px;
-            gap: 15px; 
-            flex-wrap: wrap;
-        }
-
-        .header-box h1 { 
-            margin: 0; 
-            font-size: 2.5rem; 
-            font-weight: 800; 
-        }
-
-        .header-box p { 
-            color: var(--text-muted); 
-            margin: 5px 0 0 0; 
-            font-size: 1.1rem; 
-        }
-        
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px; 
-        }
-
-        .stat-card { 
-            background: var(--panel-bg); 
-            border: 1px solid var(--panel-border); 
-            padding: 25px; 
-            border-radius: 12px; 
-            backdrop-filter: blur(5px); 
-        }
-
-        .stat-value { 
-            font-size: 3rem; 
-            font-weight: 800; 
-            color: var(--text-main); 
-            margin-top: 10px; 
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.1); 
-        }
-        
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
-            gap: 25px; 
-        }
-
-        .card { 
-            background: var(--panel-bg); 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            padding: 25px; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow: hidden;
-        }
-
-        .card:hover { 
-            border-color: var(--neon-cyan); 
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); 
-            transform: translateY(-3px); 
-        }
-        
-        .status-dot { 
-            width: 12px; 
-            height: 12px; 
-            background: var(--neon-green); 
-            border-radius: 50%; 
-            display: inline-block; 
-            margin-right: 8px; 
-            box-shadow: 0 0 15px var(--neon-green); 
-            animation: pulse 2s infinite;
-        }
-
-        .offline .status-dot { 
-            background: var(--neon-red); 
-            box-shadow: 0 0 15px var(--neon-red); 
-            animation: none; 
-        }
-
-        @keyframes pulse { 
-            0% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0.7); } 
-            70% { box-shadow: 0 0 0 10px rgba(12, 243, 162, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(12, 243, 162, 0); } 
-        }
-
-        .meta-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px 0; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
-            font-size: 0.95rem; 
-        }
-
-        .meta-row:last-of-type { 
-            border-bottom: none; 
-        }
-        
-        /* ==========================================================================
-           6. CLOUD IDE & FILE EXPLORER
-           ========================================================================== */
-        .ide-layout { 
-            display: flex; 
-            gap: 20px; 
-            height: 100%; 
-            min-height: 600px; 
-            flex-wrap: wrap;
-        }
-
-        .ide-sidebar { 
-            width: 280px; 
-            background: var(--panel-bg); 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            padding: 15px; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        .ide-main { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            min-width: 300px; 
-        }
-        
-        .file-item { 
-            padding: 12px 15px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            color: var(--text-muted); 
-            font-size: 0.95rem; 
-            margin-bottom: 5px; 
-            border: 1px solid transparent; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            gap: 10px; 
-        }
-
-        .file-item:hover { 
-            background: rgba(255, 255, 255, 0.05); 
-            color: white; 
-        }
-
-        .file-item.active { 
-            background: rgba(0, 242, 254, 0.1); 
-            border-color: var(--neon-cyan); 
-            color: var(--neon-cyan); 
-        }
-        
-        .ide-tabs { 
-            display: flex; 
-            background: #0a0a0a; 
-            border-bottom: 1px solid #333; 
-            overflow-x: auto; 
-        }
-
-        .ide-tab { 
-            padding: 12px 20px; 
-            color: #888; 
-            border-right: 1px solid #333; 
-            cursor: pointer; 
-            font-family: var(--font-mono); 
-            font-size: 0.9rem; 
-            white-space: nowrap;
-        }
-
-        .ide-tab.active { 
-            background: #1e1e1e; 
-            color: #fff; 
-            border-top: 2px solid var(--neon-purple); 
-        }
-        
-        #editorContainer { 
-            flex-grow: 1; 
-            background: #1e1e1e; 
-            min-height: 300px;
-        }
-        
-        .terminal { 
-            height: 200px; 
-            background: #050505; 
-            border-top: 1px solid #333; 
-            padding: 15px; 
-            font-family: var(--font-mono); 
-            font-size: 0.9rem; 
-            color: #ccc; 
-            overflow-y: auto; 
-        }
-
-        .term-line { 
-            margin: 4px 0; 
-            line-height: 1.4; 
-        } 
-
-        .term-sys { color: #55aaff; } 
-        .term-err { color: #ff5555; } 
-        .term-succ { color: #55ff55; } 
-        .term-warn { color: #ffaa00; }
-
-        /* ==========================================================================
-           7. WEB SERIAL TERMINAL
-           ========================================================================== */
-        .serial-console { 
-            background: #000; 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            height: 500px; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-
-        .serial-toolbar { 
-            background: #111; 
-            padding: 15px; 
-            display: flex; 
-            gap: 15px; 
-            border-bottom: 1px solid #333; 
-            align-items: center; 
-            flex-wrap: wrap;
-        }
-
-        .serial-output { 
-            flex-grow: 1; 
-            padding: 15px; 
-            overflow-y: auto; 
-            font-family: var(--font-mono); 
-            font-size: 0.9rem; 
-            color: #0cf3a2; 
-            white-space: pre-wrap; 
-        }
-
-        .serial-input-area { 
-            display: flex; 
-            border-top: 1px solid #333; 
-            flex-wrap: wrap;
-        }
-
-        .serial-input-area input { 
-            flex-grow: 1; 
-            background: #111; 
-            border: none; 
-            padding: 15px; 
-            color: white; 
-            font-family: var(--font-mono); 
-            outline: none; 
-            min-width: 200px;
-        }
-
-        /* ==========================================================================
-           8. HEARTBEAT MONITOR
-           ========================================================================== */
-        .heartbeat-container { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 30px; 
-            height: 500px; 
-        }
-
-        .heartbeat-log-panel { 
-            background: rgba(0, 0, 0, 0.4); 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-
-        .heartbeat-header { 
-            background: rgba(12, 243, 162, 0.1); 
-            color: var(--neon-green); 
-            padding: 15px; 
-            font-weight: bold; 
-            border-bottom: 1px solid rgba(12, 243, 162, 0.3); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-
-        .heartbeat-list { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 10px; 
-        }
-
-        .heartbeat-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px; 
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.1); 
-            font-family: var(--font-mono); 
-            font-size: 0.85rem; 
-            animation: slideDown 0.3s ease-out; 
-        }
-
-        @keyframes slideDown { 
-            from { 
-                opacity: 0; 
-                transform: translateY(-10px); 
-            } 
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            } 
-        }
-
-        .heartbeat-item:last-child { 
-            border-bottom: none; 
-        }
-
-        .ping-time { 
-            color: var(--neon-purple); 
-        } 
-
-        .ping-device { 
-            color: var(--text-main); 
-            font-weight: bold; 
-        } 
-
-        .ping-status { 
-            color: var(--neon-green); 
-            display: flex; 
-            align-items: center; 
-            gap: 5px; 
-        }
-
-        .pulse-ring-container { 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: rgba(0, 0, 0, 0.2); 
-            border: 1px solid var(--panel-border); 
-            border-radius: 12px; 
-            position: relative; 
-            overflow: hidden; 
-        }
-
-        .pulse-ring { 
-            width: 150px; 
-            height: 150px; 
-            border-radius: 50%; 
-            background: rgba(12, 243, 162, 0.1); 
-            position: absolute; 
-            animation: radarPulse 2s infinite linear; 
-        }
-
-        .pulse-ring:nth-child(2) { 
-            animation-delay: 0.6s; 
-        } 
-
-        .pulse-ring:nth-child(3) { 
-            animation-delay: 1.2s; 
-        }
-
-        @keyframes radarPulse { 
-            0% { transform: scale(0.5); opacity: 1; border: 2px solid var(--neon-green); } 
-            100% { transform: scale(3); opacity: 0; border: 2px solid var(--neon-green); } 
-        }
-
-        .center-node { 
-            width: 50px; 
-            height: 50px; 
-            background: var(--neon-green); 
-            border-radius: 50%; 
-            position: relative; 
-            z-index: 10; 
-            box-shadow: 0 0 30px var(--neon-green); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 1.5rem; 
-        }
-
-        /* ==========================================================================
-           9. MODALS & TOASTS
-           ========================================================================== */
-        .modal-overlay { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0, 0, 0, 0.85); 
-            z-index: 1000; 
-            justify-content: center; 
-            align-items: center; 
-            backdrop-filter: blur(8px); 
-            padding: 20px;
-        }
-
-        .modal { 
-            background: var(--bg-gradient); 
-            border: 1px solid var(--panel-border); 
-            border-top: 4px solid var(--neon-cyan); 
-            padding: 40px; 
-            width: 100%; 
-            max-width: 500px; 
-            border-radius: 12px; 
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8); 
-            max-height: 90vh; 
-            overflow-y: auto;
-        }
-
-        .modal h2 { 
-            margin-top: 0; 
-            font-size: 1.8rem; 
-            letter-spacing: 1px; 
-        }
-
-        .modal-actions { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 15px; 
-            margin-top: 30px; 
-            flex-wrap: wrap;
-        }
-
-        #toastContainer { 
-            position: fixed; 
-            bottom: 30px; 
-            right: 30px; 
-            z-index: 10000; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-        }
-
-        .toast { 
-            background: #111; 
-            border-left: 4px solid var(--neon-cyan); 
-            padding: 18px 25px; 
-            color: white; 
-            border-radius: 6px; 
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); 
-            font-weight: 500; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            min-width: 250px; 
-        }
-
-        .upload-zone { 
-            border: 2px dashed var(--neon-purple); 
-            padding: 60px; 
-            text-align: center; 
-            border-radius: 12px; 
-            margin-bottom: 30px; 
-            cursor: pointer; 
-            background: rgba(188, 19, 254, 0.05); 
-        }
-
-        .upload-zone:hover { 
-            background: rgba(188, 19, 254, 0.1); 
-            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); 
-        }
-
-        /* ==========================================================================
-           10. MOBILE RESPONSIVENESS ENGINE
-           ========================================================================== */
-        @media (max-width: 850px) {
-            body { 
-                flex-direction: column; 
-                overflow-y: auto; 
-            }
-
-            nav { 
-                width: 100%; 
-                padding: 15px; 
-                border-right: none; 
-                border-bottom: 1px solid var(--panel-border); 
-                flex-direction: row; 
-                flex-wrap: wrap; 
-                justify-content: center; 
-                gap: 5px; 
-            }
-
-            .brand { 
-                width: 100%; 
-                justify-content: center; 
-                margin-bottom: 10px; 
-            }
-
-            .nav-section-title { 
-                display: none; /* Hide headers on mobile nav to save space */
-            }
-
-            .nav-item { 
-                padding: 10px; 
-                font-size: 0.85rem; 
-                margin-bottom: 0; 
-            }
-
-            .admin-panel { 
-                width: 100%; 
-                border-top: 1px solid var(--panel-border); 
-                margin-top: 10px; 
-                padding-top: 10px; 
-                text-align: center; 
-            }
-            
-            main { 
-                padding: 20px; 
-                overflow-y: visible; 
-            }
-
-            .header-box { 
-                flex-direction: column; 
-                align-items: flex-start; 
-            }
-
-            .stats-grid { 
-                grid-template-columns: 1fr; 
-            }
-
-            .grid { 
-                grid-template-columns: 1fr; 
-            }
-            
-            .ide-layout { 
-                flex-direction: column; 
-            }
-
-            .ide-sidebar { 
-                width: 100%; 
-                margin-bottom: 20px; 
-            }
-            
-            .heartbeat-container { 
-                grid-template-columns: 1fr; 
-                height: auto; 
-            }
-
-            .pulse-ring-container { 
-                height: 300px; 
-                margin-bottom: 20px; 
-            }
-
-            .heartbeat-log-panel { 
-                height: 400px; 
-            }
-            
-            .modal { 
-                padding: 25px; 
-            }
-
-            #toastContainer { 
-                right: 20px; 
-                bottom: 20px; 
-                left: 20px; 
-                align-items: center; 
-            }
-
-            .toast { 
-                width: 100%; 
-                min-width: 0; 
-            }
-        }
-    </style>
+    --glass: rgba(10, 14, 23, 0.85);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-highlight: rgba(255, 255, 255, 0.25);
+    --shadow: 0 20px 50px rgba(0,0,0,0.6);
+    --shadow-inner: inset 0 2px 10px rgba(255,255,255,0.05);
+    
+    --radius: 16px;
+    --transition-fast: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-smooth: 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    --app-bg: var(--bg);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", system-ui, sans-serif; }
+html, body { height: 100%; background: var(--app-bg); color: var(--text); -webkit-font-smoothing: antialiased; transition: background 1s ease; overflow-x: hidden; scroll-behavior: smooth; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; outline: none; border: none; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
+
+/* Lock Screen Bypass via CSS */
+html.system-unlocked #passwordScreen { display: none !important; }
+
+/* ==========================================================================
+   2. DYNAMIC BACKGROUND PARALLAX (PERFORMANCE OPTIMIZED)
+   ========================================================================== */
+.bg-animation { position: fixed; inset: 0; z-index: -1; overflow: hidden; opacity: 0.55; transition: transform 0.1s linear; pointer-events: none; will-change: transform; }
+/* PERFORMANCE FIX: Removed filter: blur(). Replaced with radial gradients. Saves massive GPU power. */
+.orb { position: absolute; border-radius: 50%; opacity: 0.45; mix-blend-mode: screen; will-change: transform; }
+.orb-1 { width: 60vw; height: 60vw; background: radial-gradient(circle closest-side, rgba(99, 102, 241, 0.8), transparent); top: -25%; left: -15%; animation: float 40s infinite ease-in-out; }
+.orb-2 { width: 50vw; height: 50vw; background: radial-gradient(circle closest-side, rgba(236, 72, 153, 0.6), transparent); bottom: -25%; right: -15%; animation: float 35s infinite ease-in-out reverse; }
+.orb-3 { width: 45vw; height: 45vw; background: radial-gradient(circle closest-side, rgba(16, 185, 129, 0.5), transparent); top: 35%; left: 35%; opacity: 0.3; animation: float 45s infinite ease-in-out 5s; }
+@keyframes float { 0%, 100% { transform: translate3d(0,0,0) scale(1) rotate(0deg); } 50% { transform: translate3d(30px,-30px,0) scale(1.02) rotate(5deg); } }
+
+/* ==========================================================================
+   3. JS RIPPLE ENGINE
+   ========================================================================== */
+.ripple-target { position: relative; overflow: hidden; cursor: pointer; }
+.ripple-effect { position: absolute; border-radius: 50%; transform: scale(0); animation: rippleAnim 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); background: rgba(255, 255, 255, 0.2); pointer-events: none; z-index: 10; }
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+/* ==========================================================================
+   4. HEADER
+   ========================================================================== */
+header { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); background: rgba(10, 14, 23, 0.75); border-bottom: 1px solid var(--border); box-shadow: 0 4px 30px rgba(0,0,0,0.4); padding: 12px 24px; transition: transform 0.5s var(--transition-smooth); }
+
+.header-content { max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+
+.logo-container { display: flex; align-items: center; gap: 16px; justify-self: flex-start; padding: 6px 12px; border-radius: 16px; transition: var(--transition-fast); }
+.logo-container:hover { background: rgba(255,255,255,0.05); }
+.logo-box { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px var(--accent-glow), var(--shadow-inner); transition: var(--transition-fast); border: 1px solid rgba(255,255,255,0.2); }
+.logo-container:hover .logo-box { transform: scale(1.02) rotate(-2deg); box-shadow: 0 12px 32px var(--accent-glow); }
+.logo-icon { font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.logo-text .title { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff, var(--muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.telemetry-widget { justify-self: center; display: flex; align-items: center; gap: 16px; background: rgba(30, 36, 50, 0.6); border: 1px solid var(--border-highlight); padding: 8px 24px; border-radius: 16px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.3), var(--shadow-inner); backdrop-filter: blur(10px); white-space: nowrap; color: var(--text); }
+.telemetry-item { display: flex; align-items: center; gap: 8px; }
+.net-online { color: var(--success); transition: color var(--transition-smooth); }
+.net-offline { color: var(--danger); transition: color var(--transition-smooth); }
+.divider { width: 1px; height: 20px; background: var(--border-highlight); }
+
+.datetime-display { display: flex; align-items: center; gap: 10px; }
+.datetime-display .time { font-family: "JetBrains Mono", monospace; font-size: 16px; font-weight: 800; color: var(--accent); text-shadow: 0 2px 8px var(--accent-glow); }
+.datetime-display .date { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.header-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; justify-self: flex-end; }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); font-size: 20px; box-shadow: var(--shadow-inner), 0 4px 12px rgba(0,0,0,0.2); color: var(--text); }
+.icon-btn:hover { transform: translateY(-2px); background: var(--card-hover); border-color: var(--accent); box-shadow: 0 10px 24px var(--accent-glow); color: var(--accent); }
+
+@media (max-width: 1000px) {
+    .header-content { display: flex; flex-wrap: wrap; justify-content: space-between; }
+    .telemetry-widget { order: 3; width: 100%; justify-content: center; margin-top: 12px; }
+}
+
+/* ==========================================================================
+   5. MAIN SEARCH & ACTIONS
+   ========================================================================== */
+.main-container { max-width: 1400px; margin: 0 auto; padding: 40px 24px 140px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 1; }
+.hero { text-align: center; margin-bottom: 40px; animation: slideDown 0.8s var(--transition-smooth) both; width: 100%; }
+.hero h1 { font-size: 56px; font-weight: 900; letter-spacing: -2px; margin-bottom: 12px; text-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.hero .tagline { font-size: 18px; color: var(--muted); font-weight: 500; }
+
+.search-container { width: 100%; max-width: 700px; position: relative; margin-bottom: 32px; animation: slideUp 0.8s var(--transition-smooth) 0.1s both; }
+.search-bar { width: 100%; padding: 20px 70px 20px 28px; border-radius: 20px; border: 2px solid var(--border); background: var(--card); color: var(--text); font-size: 18px; font-weight: 500; transition: var(--transition-smooth); box-shadow: var(--shadow), var(--shadow-inner); backdrop-filter: blur(12px); will-change: box-shadow; }
+.search-bar:focus { outline: none; border-color: var(--accent); background: var(--card-hover); box-shadow: 0 15px 40px rgba(0,0,0,0.5), 0 0 0 4px var(--accent-glow); transform: translateY(-2px); }
+.search-bar::placeholder { color: var(--muted); transition: 0.3s; }
+.search-bar:focus::placeholder { opacity: 0.3; }
+.search-icon { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 24px; color: var(--muted); pointer-events: none; }
+.search-shortcut { position: absolute; right: 70px; top: 50%; transform: translateY(-50%); font-size: 12px; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 8px; color: var(--muted); font-weight: 700; pointer-events: none; border: 1px solid var(--border); font-family: "JetBrains Mono", monospace; }
+
+.suggestions { position: absolute; top: calc(100% + 16px); left: 0; right: 0; background: var(--glass); border: 1px solid var(--border-highlight); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.7); max-height: 400px; overflow-y: auto; display: none; z-index: 50; backdrop-filter: blur(20px); }
+.suggestion-item { padding: 18px 24px; cursor: pointer; transition: background var(--transition-fast), padding var(--transition-smooth); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+.suggestion-item.active, .suggestion-item:hover { background: rgba(255,255,255,0.08); padding-left: 32px; border-left: 4px solid var(--accent); }
+.suggestion-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+.suggestion-details { display: flex; flex-direction: column; }
+.suggestion-label { font-weight: 800; font-size: 16px; }
+.suggestion-url { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: "JetBrains Mono", monospace; }
+
+.quick-actions { display: flex; justify-content: center; gap: 16px; margin-bottom: 56px; flex-wrap: wrap; animation: slideUp 0.8s var(--transition-smooth) 0.2s both; }
+.action-btn { padding: 14px 28px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); color: var(--text); font-weight: 700; font-size: 14px; transition: var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 10px; backdrop-filter: blur(8px); box-shadow: var(--shadow-inner), 0 4px 12px rgba(0,0,0,0.2); }
+.action-btn:hover { transform: translateY(-2px); background: var(--card-hover); border-color: var(--border-highlight); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+.action-btn:active { transform: translateY(1px); }
+.action-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px var(--accent-glow), var(--shadow-inner); text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.action-btn.primary:hover { filter: brightness(1.1); box-shadow: 0 15px 40px var(--accent-glow); }
+
+/* ==========================================================================
+   6. CATEGORY MANAGEMENT & GRID
+   ========================================================================== */
+#sectionsContainer { width: 100%; display: flex; flex-direction: column; gap: 40px; }
+.section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 36px; box-shadow: var(--shadow); width: 100%; backdrop-filter: blur(12px); transition: border-color 0.5s var(--transition-smooth); animation: fadeIn 1s var(--transition-smooth) both; }
+.section:hover { border-color: var(--border-highlight); }
+
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.section-title-wrap { display: flex; align-items: center; gap: 14px; cursor: pointer; padding: 8px 12px; border-radius: 12px; transition: var(--transition-fast); margin-left: -12px; }
+.section-title-wrap:hover { background: rgba(255,255,255,0.05); }
+.section-title-wrap h2 { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; margin: 0; }
+.section-title-wrap .badge { font-size: 13px; color: var(--accent); background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; font-weight: 800; box-shadow: var(--shadow-inner); }
+
+.section-controls { display: flex; gap: 8px; align-items: center; }
+.icon-action-btn { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 16px; transition: var(--transition-fast); box-shadow: var(--shadow-inner); }
+.icon-action-btn:hover { background: var(--card-hover); color: var(--text); border-color: var(--border-highlight); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+.section.collapsed .grid { display: none; }
+.section.collapsed .toggle-icon { transform: rotate(-90deg); }
+.toggle-icon { transition: transform 0.4s var(--transition-smooth); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; min-height: 120px; transition: background 0.4s ease; border-radius: 16px; }
+.grid.drag-over { background: rgba(255,255,255,0.02); outline: 2px dashed var(--accent); outline-offset: 8px; }
+
+.link-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 28px 20px; text-align: center; cursor: grab; transition: var(--transition-smooth); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: var(--shadow-inner), 0 4px 12px rgba(0,0,0,0.1); animation: popIn 0.8s var(--transition-smooth) backwards; will-change: transform, box-shadow; }
+.link-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, var(--accent-glow), transparent 70%); opacity: 0; transition: opacity 0.6s ease; z-index: 0; }
+.link-card:hover::before { opacity: 0.15; }
+.link-card:hover { transform: translateY(-4px) scale(1.01); border-color: var(--accent); background: rgba(255,255,255,0.04); box-shadow: 0 15px 35px rgba(0,0,0,0.3), 0 0 0 1px var(--accent-glow); z-index: 10; }
+.link-card:active { cursor: grabbing; transform: scale(0.98); transition: var(--transition-fast); }
+.link-card.dragging { opacity: 0.5; transform: scale(0.95); border: 2px dashed var(--muted); box-shadow: none; }
+
+.link-card > * { position: relative; z-index: 1; }
+.link-card .card-icon { font-size: 46px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transition: var(--transition-smooth); pointer-events: none; }
+.link-card:hover .card-icon { transform: scale(1.06) rotate(3deg) translateY(-2px); }
+.link-card .label { font-weight: 800; font-size: 17px; letter-spacing: -0.3px; pointer-events: none; }
+.link-card .url { font-size: 12px; color: var(--muted); font-weight: 600; font-family: "JetBrains Mono", monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; pointer-events: none; transition: color var(--transition-smooth); }
+.link-card:hover .url { color: var(--text); }
+.link-card .tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; pointer-events: none; }
+.tag { font-size: 11px; padding: 4px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; font-weight: 800; transition: all var(--transition-smooth); }
+.link-card:hover .tag { border-color: var(--accent); background: var(--accent-glow); color: var(--text); }
+
+/* ==========================================================================
+   7. DEEP WORK ZONE
+   ========================================================================== */
+.deep-work-zone { display: grid; grid-template-columns: 450px 1fr; gap: 32px; margin-top: 48px; width: 100%; align-items: stretch; animation: slideUp 1s var(--transition-smooth) 0.3s both; }
+@media (max-width: 1100px) { .deep-work-zone { grid-template-columns: 1fr; } }
+.timer-section, .notes-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; box-shadow: var(--shadow); backdrop-filter: blur(12px); display: flex; flex-direction: column; transition: border-color var(--transition-smooth); }
+
+.timer-section { align-items: center; text-align: center; }
+.timer-header { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px; width: 100%; position: relative; }
+.timer-header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.timer-header h3 { font-size: 28px; font-weight: 900; letter-spacing: -1px; }
+.timer-settings-btn { background: transparent; border: none; color: var(--muted); font-size: 20px; transition: transform var(--transition-smooth), color var(--transition-fast); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.timer-settings-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); transform: rotate(90deg); }
+.timer-header .badge { background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800; color: var(--accent); box-shadow: var(--shadow-inner); transition: 0.4s ease; }
+
+.pomo-cycles { display: flex; gap: 10px; margin-bottom: 24px; }
+.cycle-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--border); transition: all 0.5s var(--transition-smooth); }
+.cycle-dot.completed { background: var(--success); border-color: var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+.cycle-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); animation: pulseDot 3s infinite ease-in-out; }
+@keyframes pulseDot { 0% { transform: scale(0.95); opacity: 0.7;} 50% { transform: scale(1.15); opacity: 1;} 100% { transform: scale(0.95); opacity: 0.7;} }
+
+.timer-task-input { width: 100%; margin-bottom: 32px; }
+.timer-task-input input { width: 100%; padding: 18px; background: rgba(0,0,0,0.2); border: 1px dashed var(--border-highlight); border-radius: 14px; color: var(--text); font-size: 16px; text-align: center; transition: all var(--transition-smooth); font-weight: 700; box-shadow: var(--shadow-inner); }
+.timer-task-input input:focus { outline: none; border-color: var(--accent); border-style: solid; background: rgba(0,0,0,0.5); box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-inner); }
+
+.timer-ring-container { position: relative; width: 240px; height: 240px; margin-bottom: 32px; display: flex; align-items: center; justify-content: center; }
+.timer-ring { transform: rotate(-90deg); width: 100%; height: 100%; overflow: visible; }
+.timer-ring-bg { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 10; }
+.timer-ring-progress { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; stroke-dasharray: 691; stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s linear; }
+.timer-ring-progress.active { animation: ringGlow 4s infinite alternate ease-in-out; }
+@keyframes ringGlow { from { filter: drop-shadow(0 0 4px var(--accent-glow)); } to { filter: drop-shadow(0 0 12px var(--accent)); } }
+
+.pomodoro-display { position: absolute; font-size: 64px; font-weight: 900; font-family: "JetBrains Mono", monospace; letter-spacing: -4px; text-shadow: 0 8px 24px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; line-height: 1; cursor: pointer; transition: transform var(--transition-smooth), color var(--transition-smooth); }
+.pomodoro-display:hover { transform: scale(1.03); color: var(--accent); }
+.pomodoro-display span { font-size: 13px; font-family: "Inter", sans-serif; letter-spacing: 3px; color: var(--muted); font-weight: 800; margin-top: 8px; text-transform: uppercase; transition: color var(--transition-smooth); }
+
+.timer-controls { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; }
+.timer-controls .action-btn { font-size: 16px; padding: 16px 24px; flex-grow: 1; border-radius: 14px; }
+.timer-vol-btn { background: var(--card); border: 1px solid var(--border); border-radius: 14px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text); transition: all var(--transition-fast); flex-shrink: 0; box-shadow: var(--shadow-inner); }
+.timer-vol-btn:hover { border-color: var(--border-highlight); background: var(--card-hover); }
+.timer-vol-btn.muted { color: var(--danger); text-decoration: line-through; border-color: rgba(239, 68, 68, 0.3); }
+
+.pomo-mode-select { display: flex; gap: 6px; margin-top: 24px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 16px; border: 1px solid var(--border); width: 100%; justify-content: space-between; transition: border-color var(--transition-smooth); }
+.pomo-mode-btn { padding: 10px 12px; border-radius: 10px; border: none; background: transparent; color: var(--muted); font-weight: 800; transition: all var(--transition-smooth); font-size: 13px; flex-grow: 1; text-align: center; }
+.pomo-mode-btn.active { background: var(--card-hover); color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid var(--border-highlight); }
+
+.notes-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+.notes-tabs { display: flex; gap: 8px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow-inner); transition: border-color var(--transition-smooth); }
+.note-tab { padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 800; transition: all var(--transition-smooth); color: var(--muted); background: transparent; border: 1px solid transparent; }
+.note-tab.active { background: var(--card-hover); color: var(--text); box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid var(--border-highlight); }
+.notes-toolbar { display: flex; gap: 12px; }
+.notes-toolbar button { padding: 12px 20px; border-radius: 12px; background: var(--card-hover); border: 1px solid var(--border); color: var(--text); font-size: 14px; font-weight: 800; transition: all var(--transition-fast); box-shadow: 0 4px 12px rgba(0,0,0,0.1), var(--shadow-inner); }
+.notes-toolbar button:hover { background: var(--border-highlight); border-color: #fff; transform: translateY(-2px); }
+.notes-textarea { flex-grow: 1; width: 100%; padding: 28px; border-radius: 16px; border: 2px solid var(--border); background: rgba(0,0,0,0.15); color: var(--text); font-size: 16px; line-height: 1.7; resize: none; font-family: "JetBrains Mono", monospace; transition: all var(--transition-smooth); box-shadow: inset 0 8px 24px rgba(0,0,0,0.2); }
+.notes-textarea:focus { outline: none; border-color: var(--accent); background: rgba(0,0,0,0.4); box-shadow: inset 0 8px 24px rgba(0,0,0,0.3), 0 0 0 3px var(--accent-glow); }
+.notes-footer { display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px; color: var(--muted); font-weight: 700; }
+
+/* ==========================================================================
+   8. MINECRAFT INVENTORY HOTBAR
+   ========================================================================== */
+.hotbar-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(10, 14, 23, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 10px; border-radius: 20px; border: 1px solid var(--border-highlight); box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.05); z-index: 1000; animation: slideUp 1s var(--transition-smooth) 0.5s both; transition: border-color var(--transition-smooth); }
+.hotbar-slot { width: 48px; height: 48px; background: rgba(255,255,255,0.02); border: 2px solid rgba(255,255,255,0.05); border-radius: 12px; position: relative; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text); transition: all var(--transition-smooth); box-shadow: inset 0 4px 12px rgba(0,0,0,0.2); user-select: none; }
+.hotbar-slot:active { transform: scale(0.95); transition: var(--transition-fast); }
+.hotbar-slot:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); transform: translateY(-4px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 0 2px var(--accent-glow); z-index: 2; }
+.hotbar-slot.empty { opacity: 0.3; border-style: dashed; font-size: 16px; color: var(--muted); cursor: default; }
+.hotbar-slot.empty:hover { opacity: 0.8; transform: translateY(-2px); }
+.hotbar-num { position: absolute; top: 4px; left: 6px; font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 900; font-family: "JetBrains Mono", monospace; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.hotbar-slot.drag-over { background: rgba(255,255,255,0.05); outline: 2px solid var(--success); outline-offset: 4px; transform: scale(1.03); }
+
+/* ==========================================================================
+   9. CONTEXT MENUS, MODALS & TOASTS (LAPTOP SIZED MODAL)
+   ========================================================================== */
+.context-menu { position: fixed; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border-highlight); border-radius: 14px; box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1); padding: 10px; min-width: 240px; z-index: 9999; display: none; opacity: 0; transform: scale(0.98); transform-origin: top left; transition: opacity 0.2s ease, transform 0.2s var(--transition-smooth); }
+.context-menu.active { display: block; opacity: 1; transform: scale(1); }
+.context-menu-item { padding: 14px 18px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 14px; color: var(--text); transition: all var(--transition-fast); width: 100%; border: none; background: transparent; text-align: left; }
+.context-menu-item:hover { background: rgba(255,255,255,0.08); transform: translateX(3px); }
+.context-menu-item.danger:hover { background: var(--danger); color: white; }
+.context-menu-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; animation: fadeIn 0.4s ease; padding: 20px; }
+.modal-overlay.active { display: flex; }
+/* PERFORMANCE / LAPTOP FIX: Adjusted width/padding/max-height for smaller screens */
+.modal { width: 100%; max-width: 650px; background: var(--card); border: 1px solid var(--border-highlight); border-radius: 24px; padding: 32px; box-shadow: 0 40px 100px rgba(0,0,0,0.7), inset 0 2px 10px rgba(255,255,255,0.05); animation: scaleIn 0.5s var(--transition-smooth); max-height: 85vh; overflow-y: auto; backdrop-filter: blur(16px); }
+.modal h3 { font-size: 28px; margin-bottom: 24px; font-weight: 900; text-align: center; letter-spacing: -1px; }
+.modal-input { width: 100%; padding: 16px 20px; border-radius: 16px; border: 2px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 16px; transition: all var(--transition-fast); font-family: inherit; box-shadow: var(--shadow-inner); }
+.modal-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--shadow-inner), 0 0 0 3px var(--accent-glow); background: rgba(0,0,0,0.5); }
+
+.modal-actions { display: flex; gap: 16px; justify-content: center; margin-top: 24px; }
+.modal-btn { padding: 14px 28px; border-radius: 14px; border: none; font-weight: 800; cursor: pointer; transition: all var(--transition-fast); width: 100%; font-size: 15px; box-shadow: var(--shadow-inner), 0 4px 12px rgba(0,0,0,0.1); }
+.modal-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border: 1px solid rgba(255,255,255,0.2); text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.modal-btn.primary:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 10px 24px var(--accent-glow); }
+.modal-btn.secondary { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border-highlight); }
+.modal-btn.secondary:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+.modal-btn.danger { background: var(--danger); color: white; border: 1px solid rgba(255,255,255,0.2); }
+
+/* ==========================================================================
+   10. THEME INSPECTOR V2 (UPGRADED UI GRID)
+   ========================================================================== */
+.theme-inspector-v2 { display: flex; flex-direction: column; gap: 24px; text-align: left; }
+.ti-preview-card { width: 100%; height: 120px; border-radius: 16px; border: 1px solid var(--border-highlight); background: var(--app-bg); transition: background 0.6s var(--transition-smooth); box-shadow: inset 0 20px 50px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+.ti-preview-text { font-size: 14px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; font-family: "JetBrains Mono", monospace; mix-blend-mode: overlay; pointer-events: none; }
+
+.ti-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 768px) { .ti-grid { grid-template-columns: 1fr; } }
+
+.ti-section { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-inner); display: flex; flex-direction: column; gap: 16px; }
+.ti-heading { font-size: 15px; font-weight: 800; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 4px; letter-spacing: -0.5px; }
+.ti-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.ti-select { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-hover); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition-fast); box-shadow: var(--shadow-inner); outline: none; appearance: none; }
+.ti-select:focus, .ti-select:hover { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+
+.ti-color-pickers { display: flex; gap: 16px; width: 100%; }
+.ti-picker-group { flex: 1; display: flex; flex-direction: column; gap: 8px; transition: opacity 0.3s, transform 0.3s; }
+.ti-picker-group.hidden { opacity: 0; pointer-events: none; position: absolute; visibility: hidden; }
+.ti-picker-group span { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
+
+.ti-color-input { -webkit-appearance: none; -moz-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; border: none; cursor: pointer; border-radius: 10px; }
+.ti-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.ti-color-input::-webkit-color-swatch { border: 2px solid var(--border-highlight); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform var(--transition-fast), border-color var(--transition-fast); }
+.ti-color-input:hover::-webkit-color-swatch { transform: scale(1.05); border-color: #fff; }
+
+.ti-presets-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.ti-preset { height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); transition: all var(--transition-smooth); box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.9); cursor: pointer; position: relative; overflow: hidden; }
+.ti-preset::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px transparent; border-radius: 10px; transition: var(--transition-fast); pointer-events: none; }
+.ti-preset:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 24px rgba(0,0,0,0.4); z-index: 2; }
+.ti-preset:hover::after { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); }
+
+/* Global Toasts & Fabs */
+.toast { position: fixed; bottom: 100px; right: 32px; background: rgba(10, 14, 23, 0.9); backdrop-filter: blur(12px); border: 1px solid var(--border-highlight); border-radius: 16px; padding: 20px 32px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); display: none; align-items: center; gap: 16px; z-index: 3000; animation: slideInRight 0.5s var(--transition-smooth); transition: border-color var(--transition-smooth); }
+.toast.active { display: flex; }
+.toast-icon { font-size: 28px; }
+.toast-message { font-weight: 700; font-size: 16px; letter-spacing: 0.5px; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+
+.fab { position: fixed; bottom: 32px; right: 32px; z-index: 90; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
+.fab-main { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 32px var(--accent-glow); border: 1px solid rgba(255,255,255,0.2); transition: all var(--transition-smooth); font-weight: 900; cursor: pointer; }
+.fab-main:hover { transform: translateY(-4px) scale(1.02); }
+</style>
 </head>
 <body>
 
-    <div id="lockScreen">
-        <div class="lock-box">
-            <h1>DBP OS</h1>
-            <h2>ENTERPRISE</h2>
-            <input type="password" id="passwordInput" placeholder="ENTER MASTER KEY" autocomplete="off">
-            <button class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="window.auth.login()">INITIALIZE SYSTEM</button>
-            <p id="authError" style="color: var(--neon-red); margin-top: 15px; display: none; font-weight: bold;">SECURITY BREACH: INVALID KEY</p>
+<div class="bg-animation" id="bgAnim">
+    <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+</div>
+
+<div class="context-menu" id="contextMenu">
+    <button class="context-menu-item ripple-target" id="ctxOpenNew"><span>↗️</span> Open in New Tab</button>
+    <button class="context-menu-item ripple-target" id="ctxCopy"><span>📋</span> Copy URL</button>
+    <button class="context-menu-item ripple-target" id="ctxPinHotbar"><span>⭐</span> Pin to Hotbar</button>
+    <div class="context-menu-divider"></div>
+    <button class="context-menu-item ripple-target" id="ctxEdit"><span>✏️</span> Edit Link</button>
+    <button class="context-menu-item danger ripple-target" id="ctxDelete"><span>🗑️</span> Delete Link</button>
+</div>
+
+<div class="context-menu" id="hotbarContextMenu">
+    <button class="context-menu-item danger ripple-target" id="ctxRemoveHotbar"><span>🗑️</span> Remove from Hotbar</button>
+</div>
+
+<div class="password-screen" id="passwordScreen">
+    <div class="password-box">
+        <div class="logo-box" style="margin:0 auto 32px; width: 72px; height: 72px; font-size: 36px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius:16px; box-shadow:0 8px 32px var(--accent-glow);">⚡</div>
+        <h2 style="font-size: 32px; letter-spacing: -1px; margin-bottom: 8px;">DBP Terminal</h2>
+        <p style="color:var(--muted); margin-bottom: 32px; font-weight: 600;">System locked. Authentication required.</p>
+        <input type="password" id="passwordInput" class="modal-input" placeholder="Enter password" style="text-align:center; font-size:20px; letter-spacing: 6px; font-family: 'JetBrains Mono', monospace;">
+        <div style="display:flex;gap:16px;margin-top:32px;">
+            <button class="modal-btn secondary ripple-target" id="previewBtn">Preview</button>
+            <button class="modal-btn primary ripple-target" id="unlockBtn">Unlock</button>
         </div>
     </div>
+</div>
 
-    <div id="toastContainer"></div>
+<header>
+    <div class="header-content">
+        <div class="logo-container ripple-target" onclick="location.reload()" style="padding: 4px; border-radius: 16px;">
+            <div class="logo-box"><div class="logo-icon">⚡</div></div>
+            <div class="logo-text"><div class="title">DBP</div></div>
+        </div>
+        
+        <div class="telemetry-widget" id="telemetryWidget">
+            <div class="telemetry-item" id="batStatus" title="Battery Status">🔋 Calc...</div>
+            <div class="divider"></div>
+            <div class="telemetry-item net-online" id="netStatus" title="Network Status">📶 Online</div>
+            <div class="divider"></div>
+            <div class="datetime-display">
+                <span class="time" id="clockTime">--:--</span>
+                <span class="date" id="clockDate">---</span>
+            </div>
+        </div>
 
-    <div id="registerModal" class="modal-overlay">
-        <div class="modal">
-            <h2>Register Hardware Node</h2>
-            <p style="color: var(--text-muted);">Generate a secure Firebase Token for a new physical board.</p>
-            <div style="margin-top: 25px;">
-                <label style="color: var(--neon-cyan); font-size: 0.85rem;">NODE IDENTIFIER (NAME)</label>
-                <input type="text" id="regDeviceName" placeholder="e.g. Laser-Tripwire-Main">
+        <div class="header-right">
+            <button class="icon-btn ripple-target" id="themeBtn" title="Appearance Inspector">🎨</button>
+            <button class="icon-btn ripple-target" id="shortcutsBtn" title="Shortcuts">⌨️</button>
+        </div>
+    </div>
+</header>
+
+<main class="main-container">
+    <div class="hero">
+        <h1>Your Personal Command Center</h1>
+        <p class="tagline">Drag to organize. Edit categories. Press 1-9 to launch hotbar items.</p>
+    </div>
+    
+    <div class="search-container">
+        <input type="text" class="search-bar" id="searchBar" placeholder="Search your links, tags, or projects...">
+        <span class="search-shortcut">Ctrl+K</span>
+        <span class="search-icon">🔍</span>
+        <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="quick-actions">
+        <button class="action-btn primary ripple-target" id="addLinkBtn">➕ Add Link</button>
+        <button class="action-btn ripple-target" id="exportBtn">📤 Export Data</button>
+        <button class="action-btn ripple-target" id="importBtn">📥 Import Data</button>
+        <button class="action-btn ripple-target" id="undoBtn" style="display:none; border-color:var(--warning); color:var(--warning);">↩️ Undo Action</button>
+    </div>
+
+    <div id="sectionsContainer"></div>
+
+    <div class="deep-work-zone">
+        
+        <div class="timer-section" id="timerAnchor">
+            <div class="timer-header-top">
+                <span class="badge" id="pomoStatus">Ready</span>
+                <button class="icon-action-btn ripple-target" id="timerSettingsBtn" title="Timer Settings" style="border:none; background:transparent;">⚙️</button>
+            </div>
+            
+            <div class="timer-header" style="margin-top: 8px;">
+                <h3>Focus Engine</h3>
+                <div class="pomo-cycles" id="pomoCycles">
+                    <div class="cycle-dot current"></div>
+                    <div class="cycle-dot"></div>
+                    <div class="cycle-dot"></div>
+                    <div class="cycle-dot"></div>
+                </div>
+            </div>
+            
+            <div class="timer-task-input">
+                <input type="text" id="focusTask" placeholder="What are you working on?">
+            </div>
+
+            <div class="timer-ring-container">
+                <svg class="timer-ring" viewBox="0 0 260 260">
+                    <circle class="timer-ring-bg" cx="130" cy="130" r="110"></circle>
+                    <circle class="timer-ring-progress" id="pomoProgress" cx="130" cy="130" r="110"></circle>
+                </svg>
+                <div class="pomodoro-display" id="pomoDisplayClick" title="Click to set custom timer">
+                    <div id="pomoDisplay">25:00</div>
+                    <span>Remaining</span>
+                </div>
+            </div>
+
+            <div class="timer-controls">
+                <button class="action-btn primary ripple-target" id="pomoStart" style="font-size: 18px;">Start Session</button>
+                <button class="action-btn ripple-target" id="pomoPause" style="display:none; font-size: 18px; background: rgba(255,255,255,0.05);">Pause</button>
+                <button class="action-btn ripple-target" id="pomoSkip" style="display:none; padding: 16px;" title="Skip Phase">⏭️</button>
+                <button class="action-btn ripple-target" id="pomoReset" style="font-size: 18px;">Reset</button>
+                <button class="timer-vol-btn ripple-target" id="pomoVol" title="Toggle Sound">🔊</button>
+            </div>
+
+            <div class="pomo-mode-select">
+                <button class="pomo-mode-btn ripple-target active" data-type="work">Focus</button>
+                <button class="pomo-mode-btn ripple-target" data-type="short">Short Break</button>
+                <button class="pomo-mode-btn ripple-target" data-type="long">Long Break</button>
+                <button class="pomo-mode-btn ripple-target" data-type="custom" style="color: var(--accent);">Custom</button>
+            </div>
+        </div>
+
+        <div class="notes-section" id="notesAnchor">
+            <div class="notes-header-row">
+                <div class="notes-tabs" id="notesTabs">
+                    <button class="note-tab ripple-target active" data-tab="main" style="border:none; background:transparent;">Main Note</button>
+                    <button class="note-tab ripple-target" data-tab="work" style="border:none; background:transparent;">Projects</button>
+                    <button class="note-tab ripple-target" data-tab="ideas" style="border:none; background:transparent;">Ideas</button>
+                </div>
+                <div class="notes-toolbar">
+                    <button id="clearNotesBtn" class="ripple-target">🗑️ Clear</button>
+                    <button id="copyNotesBtn" class="primary ripple-target" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none;">📋 Copy</button>
+                </div>
+            </div>
+            <textarea class="notes-textarea" id="notesTextarea" placeholder="Jot down your thoughts while you focus..."></textarea>
+            <div class="notes-footer">
+                <span id="notesStatus">Auto-saved</span>
+                <span id="notesCounter">0 words • 0 chars</span>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="hotbar-container" id="hotbarContainer"></div>
+
+<div class="fab">
+    <button class="fab-main ripple-target" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"><span style="font-size: 24px;">✨</span><span class="toast-message" id="toastMessage">Action completed!</span></div>
+
+<script>
+/**
+ * DBP COMMAND CENTER - THE ULTIMATE BUILD
+ * Advanced JS Rendering, Category Management, Canvas-grade Animation, Cycle Logic
+ */
+
+const DEFAULT_PASS = localStorage.getItem('dbp_password') || 'dbp123';
+const KEYS = { unlock:'dbp_unlocked', notes:'dbp_notes_v2', links:'dbp_links_data', backup:'dbp_links_backup', sessions:'dbp_pomo_sessions', hotbar:'dbp_hotbar_data', theme:'dbp_theme_v7', timerSettings:'dbp_timer_cfg' };
+
+const defaultLinks = {
+    development: [
+        {id:'dbptools', icon:'🧰', label:'DBP Tools', url:'https://localhost/tools', tags:['Project', 'Dev']},
+        {id:'arduino', icon:'⚡', label:'Arduino Editor', url:'https://create.arduino.cc', tags:['Robotics']}
+    ],
+    study: [
+        {id:'ip', icon:'📚', label:'Class 12 IP', url:'https://cbseacademic.nic.in', tags:['CBSE']},
+        {id:'physics', icon:'⚛️', label:'Physics Simulator', url:'https://olab.edu.in', tags:['School']}
+    ],
+    ai_tools: [
+        {id:'chatgpt', icon:'🤖', label:'ChatGPT', url:'https://chat.openai.com', tags:['AI', 'Helper']},
+        {id:'gemini', icon:'🧠', label:'Gemini', url:'https://gemini.google.com', tags:['AI', 'Google']}
+    ]
+};
+
+// Global State
+let links = JSON.parse(localStorage.getItem(KEYS.links)) || defaultLinks;
+let hotbar = JSON.parse(localStorage.getItem(KEYS.hotbar)) || Array(9).fill(null);
+let notesData = JSON.parse(localStorage.getItem(KEYS.notes)) || { main: '', work: '', ideas: '' };
+let currentNoteTab = 'main';
+
+let contextMenuTarget = null; 
+let hotbarContextTarget = null; 
+let dragData = { type: null, element: null, sourceSection: null, sourceId: null, hotbarIndex: null };
+const ORIGINAL_TITLE = document.title;
+
+// --- INITIALIZATION ---
+function init() {
+    try { initTheme(); } catch(e){}
+    try { initRippleEngine(); } catch(e){}
+    try { renderGrid(); } catch(e){}
+    try { renderHotbar(); } catch(e){}
+    try { initNotes(); } catch(e){}
+    try { initTimer(); } catch(e){}
+    try { initTelemetry(); } catch(e){}
+    
+    updateClock(); 
+    setInterval(updateClock, 1000);
+    
+    if(localStorage.getItem(KEYS.unlock) === 'true') {
+        const ps = document.getElementById('passwordScreen');
+        if(ps) ps.style.display = 'none';
+        setTimeout(() => {
+            const sb = document.getElementById('searchBar');
+            if(sb) sb.focus();
+        }, 100);
+    }
+}
+
+// --- 1. JAVASCRIPT RIPPLE ENGINE ---
+function initRippleEngine() {
+    document.addEventListener('mousedown', function(e) {
+        const target = e.target.closest('.ripple-target');
+        if (!target) return;
+        
+        const circle = document.createElement('span');
+        const diameter = Math.max(target.clientWidth, target.clientHeight) * 1.5;
+        const radius = diameter / 2;
+        const rect = target.getBoundingClientRect();
+        
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${e.clientX - rect.left - radius}px`;
+        circle.style.top = `${e.clientY - rect.top - radius}px`;
+        circle.classList.add('ripple-effect');
+        
+        const computed = window.getComputedStyle(target).position;
+        if(computed !== 'relative' && computed !== 'absolute' && computed !== 'fixed') { target.style.position = 'relative'; }
+        
+        target.appendChild(circle);
+        setTimeout(() => circle.remove(), 800);
+    });
+}
+
+// --- 2. AMBIENT PARALLAX (PERFORMANCE OPTIMIZED) ---
+let ticking = false;
+document.addEventListener('mousemove', (e) => {
+    if (!ticking) {
+        window.requestAnimationFrame(() => {
+            const bgAnim = document.getElementById('bgAnim');
+            if(bgAnim) {
+                // translate3d forces GPU hardware acceleration to stop laptop stutter
+                const x = (window.innerWidth / 2 - e.pageX) / 60; 
+                const y = (window.innerHeight / 2 - e.pageY) / 60;
+                bgAnim.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            }
+            ticking = false;
+        });
+        ticking = true;
+    }
+});
+
+function initTelemetry() {
+    if ('getBattery' in navigator) {
+        navigator.getBattery().then(bat => {
+            const updateBat = () => { 
+                const batEl = document.getElementById('batStatus');
+                if(batEl) batEl.textContent = `${bat.charging ? '⚡' : '🔋'} ${Math.round(bat.level * 100)}%`; 
+            };
+            updateBat(); bat.addEventListener('levelchange', updateBat); bat.addEventListener('chargingchange', updateBat);
+        });
+    } else { 
+        const batEl = document.getElementById('batStatus');
+        if(batEl) batEl.style.display = 'none'; 
+    }
+    
+    const updateNet = () => {
+        const el = document.getElementById('netStatus');
+        if(!el) return;
+        if(navigator.onLine) { el.textContent = '📶 Online'; el.className = 'telemetry-item net-online'; }
+        else { el.textContent = '❌ Offline'; el.className = 'telemetry-item net-offline'; }
+    };
+    window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet); updateNet();
+}
+
+// --- 3. ADVANCED THEME INSPECTOR V2 (UPGRADED UI) ---
+function initTheme() { 
+    const saved = localStorage.getItem(KEYS.theme); 
+    if(saved) document.documentElement.style.setProperty('--app-bg', saved); 
+}
+
+const themeBtn = document.getElementById('themeBtn');
+if(themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        showModal(`
+            <h3 style="margin-bottom: 24px; text-align:center;">🎨 Appearance Inspector</h3>
+            <div class="theme-inspector-v2">
                 
-                <label style="color: var(--neon-cyan); font-size: 0.85rem; margin-top: 15px; display: block;">HARDWARE ARCHITECTURE</label>
-                <select id="regBoardType">
-                    <option value="ESP32 Dev Module">ESP32 Dev Module</option>
-                    <option value="ESP32-CAM">ESP32-CAM (Camera Node)</option>
-                    <option value="ESP8266 NodeMCU">ESP8266 NodeMCU</option>
-                    <option value="Arduino Uno R4 WiFi">Arduino Uno R4 WiFi</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="window.ui.closeModals()">Cancel</button>
-                <button class="btn btn-primary" onclick="window.dbOps.register()">Generate Token</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="renameModal" class="modal-overlay">
-        <div class="modal">
-            <h2>Node Settings</h2>
-            <p style="color: var(--text-muted);">Change the display name or delete this hardware node.</p>
-            <input type="hidden" id="renameDeviceId">
-            
-            <label style="color: var(--neon-cyan); font-size: 0.85rem; margin-top: 15px; display: block;">NEW DEVICE NAME</label>
-            <input type="text" id="newDeviceNameInput" placeholder="e.g. Master Bedroom Node">
-            
-            <div class="modal-actions" style="justify-content: space-between; margin-top: 30px;">
-                <button class="btn btn-danger" onclick="window.dbOps.deleteDevice()">🗑️ Delete Node</button>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="window.ui.closeModals()">Cancel</button>
-                    <button class="btn btn-primary" onclick="window.dbOps.saveRename()">Save Name</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="controlModal" class="modal-overlay">
-        <div class="modal">
-            <h2>Command Console</h2>
-            <p style="color: var(--text-muted); font-size: 1.1rem;">Target Node: <span id="ctrlTargetName" style="color: var(--neon-cyan); font-weight: bold;"></span></p>
-            <input type="hidden" id="ctrlDeviceId">
-            
-            <div style="background: rgba(255, 51, 102, 0.05); border: 1px solid rgba(255, 51, 102, 0.3); padding: 20px; border-radius: 8px; margin: 25px 0;">
-                <h4 style="margin: 0 0 10px 0; color: var(--neon-red);">Hardware Power Cycle</h4>
-                <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.9rem;">Force the ESP32 to restart. Requires the device to be online.</p>
-                <button class="btn btn-danger" style="width: 100%;" onclick="window.dbOps.reboot()">⚠️ EXECUTE REMOTE REBOOT</button>
-            </div>
-
-            <div style="background: rgba(188, 19, 254, 0.05); border: 1px solid rgba(188, 19, 254, 0.3); padding: 20px; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0; color: var(--neon-purple);">Inject Custom Command</h4>
-                <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.9rem;">Send a string directly to the board's C++ loop logic.</p>
-                <input type="text" id="ctrlCommand" placeholder="Command String (e.g. LED_ON, SERVO_90)">
-                <button class="btn btn-purple" style="width: 100%; margin-top: 10px;" onclick="window.dbOps.sendCommand()">TRANSMIT COMMAND</button>
-            </div>
-            
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="window.ui.closeModals()">Close Console</button>
-            </div>
-        </div>
-    </div>
-
-    <nav>
-        <div class="brand"><div class="brand-icon"></div>DBP CLOUD</div>
-        
-        <div class="nav-section-title" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">CORE SYSTEMS</div>
-        <div class="nav-item active" onclick="window.ui.nav('devices', this)">🖥️ Fleet Telemetry</div>
-        <div class="nav-item" onclick="window.ui.nav('ide', this)">💻 Cloud IDE Editor</div>
-        <div class="nav-item" onclick="window.ui.nav('vault', this)">📦 Firmware Vault</div>
-        
-        <div class="nav-section-title" style="font-size: 0.75rem; color: var(--text-muted); margin: 30px 0 10px 0; letter-spacing: 1px;">ADVANCED TOOLS</div>
-        <div class="nav-item" onclick="window.ui.nav('heartbeat', this)">💓 Heartbeat Monitor</div>
-        <div class="nav-item" onclick="window.ui.nav('serial', this)">🔌 Web Serial USB</div>
-        <div class="nav-item" onclick="window.ui.nav('analytics', this)">📊 Network Analytics</div>
-        <div class="nav-item" onclick="window.ui.nav('logs', this)">📝 System Audit Logs</div>
-        
-        <div class="admin-panel" style="margin-top: auto; border-top: 1px solid var(--panel-border); padding-top: 20px;">
-            <div style="color: white; font-weight: bold; margin-bottom: 5px;">D Baivab Pattanayak</div>
-            <div style="font-size: 0.75rem; color: var(--neon-green); margin-bottom: 15px;">System Administrator</div>
-            <button class="btn btn-secondary" style="width: 100%; padding: 10px;" onclick="window.auth.logout()">🔒 Lock Terminal</button>
-        </div>
-    </nav>
-
-    <main>
-        
-        <div id="view-devices" class="view-section active">
-            <div class="header-box">
-                <div>
-                    <h1>Node Telemetry</h1>
-                    <p>Live hardware monitoring, diagnostics, and remote control.</p>
-                </div>
-                <button class="btn btn-primary" onclick="document.getElementById('registerModal').style.display='flex'">+ Register New Node</button>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div style="color:var(--text-muted); font-size:0.9rem; text-transform:uppercase;">Registered Nodes</div>
-                    <div class="stat-value" id="s-total">0</div>
-                </div>
-                <div class="stat-card" style="border-bottom: 3px solid var(--neon-green);">
-                    <div style="color:var(--neon-green); font-size:0.9rem; text-transform:uppercase;">Active & Online</div>
-                    <div class="stat-value" style="color: var(--neon-green);" id="s-online">0</div>
-                </div>
-                <div class="stat-card" style="border-bottom: 3px solid var(--neon-purple);">
-                    <div style="color:var(--neon-purple); font-size:0.9rem; text-transform:uppercase;">Pending OTA Updates</div>
-                    <div class="stat-value" style="color: var(--neon-purple);" id="s-ota">0</div>
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                <button class="btn btn-secondary filter-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="window.ui.filter('all', this)">Show All</button>
-                <button class="btn btn-secondary filter-btn" onclick="window.ui.filter('online', this)">Online Only</button>
-                <button class="btn btn-secondary filter-btn" onclick="window.ui.filter('offline', this)">Offline Only</button>
-            </div>
-
-            <div class="grid" id="deviceGrid">
-                <div style="color:var(--text-muted); padding: 20px; font-size: 1.2rem;">Establishing secure Firebase Handshake...</div>
-            </div>
-        </div>
-
-        <div id="view-ide" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1 style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                        DBP Compiler Engine 
-                        <span style="font-size: 0.8rem; background: var(--neon-purple); color: #000; padding: 4px 10px; border-radius: 20px;">OTA INJECTION: MANDATORY</span>
-                    </h1>
-                    <p>Write raw C++ code. The system automatically wraps it with the Cloud Network Layer.</p>
-                </div>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button class="btn btn-secondary" onclick="window.ideOps.saveSketch()">💾 Save to DB</button>
-                    <button class="btn btn-primary" onclick="window.ideOps.compile()">⚡ Compile & Wrap</button>
-                </div>
-            </div>
-            
-            <div class="ide-layout">
-                <div class="ide-sidebar">
-                    <h3 style="margin: 0 0 15px 0; color: var(--neon-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; font-size: 1rem;">Project Explorer</h3>
-                    <div id="sketchList" style="flex-grow: 1; overflow-y: auto;">Loading Database...</div>
-                    <div style="margin-top: 15px; border-top: 1px solid var(--panel-border); padding-top: 15px;">
-                        <input type="text" id="newSketchName" placeholder="Filename (e.g. main)" style="margin-bottom: 10px;">
-                        <button class="btn btn-purple" style="width: 100%;" onclick="window.ideOps.createSketch()">+ Create File</button>
-                    </div>
+                <div class="ti-preview-card" id="thPreview" style="background: var(--app-bg)">
+                    <span class="ti-preview-text">Live Preview</span>
                 </div>
                 
-                <div class="ide-main">
-                    <div class="ide-tabs">
-                        <div class="ide-tab active" id="currentSketchTab">main.ino</div>
-                        <div class="ide-tab" style="color: var(--neon-purple);">DBP_Cloud.h (Locked Auto-Inject)</div>
-                    </div>
-                    <div id="editorContainer"></div>
-                    
-                    <div class="terminal" id="ideTerm">
-                        <div class="term-line term-sys">DBP Cloud Architecture OS [Version 3.1.0]</div>
-                        <div class="term-line term-sys">(c) DBP Systems. All rights reserved.</div>
-                        <div class="term-line"><br></div>
-                        <div class="term-line term-succ">C++ Compiler Node connected and standing by.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <div class="ti-grid">
+                    <div class="ti-section">
+                        <h4 class="ti-heading">Custom Engine</h4>
+                        
+                        <label class="ti-label">Background Style</label>
+                        <select id="thType" class="ti-select" onchange="updateThemePreview()">
+                            <option value="solid">Solid Color</option>
+                            <option value="linear-gradient(to right, " selected>Linear Horizontal</option>
+                            <option value="linear-gradient(to bottom, ">Linear Vertical</option>
+                            <option value="linear-gradient(135deg, ">Linear Diagonal</option>
+                            <option value="radial-gradient(circle at center, ">Radial Center</option>
+                            <option value="radial-gradient(circle at top left, ">Radial Top-Left</option>
+                        </select>
 
-        <div id="view-vault" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1>Binary Vault</h1>
-                    <p>Secure cloud storage for your compiled `.bin` firmware files. Saves directly to Firebase.</p>
-                </div>
-            </div>
-            
-            <div class="upload-zone" id="dropZone">
-                <div style="font-size: 4rem; margin-bottom: 15px; text-shadow: 0 0 30px var(--neon-purple);">☁️</div>
-                <h2 style="margin: 0 0 10px 0; color: var(--text-main);">Upload Firmware Binary</h2>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Drag and drop a .bin file here, or click to browse.</p>
-                <input type="file" id="fwInput" accept=".bin" style="display: none;">
-                <div id="fwProgress" style="color: var(--neon-cyan); font-size: 1.2rem; font-weight: bold; margin-top: 20px;"></div>
-            </div>
-            
-            <h3 style="border-bottom: 1px solid var(--panel-border); padding-bottom: 15px; margin-bottom: 20px;">Available Binaries for Deployment</h3>
-            <div id="vaultList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;"></div>
-        </div>
-
-        <div id="view-heartbeat" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1 style="color: var(--neon-green);">Heartbeat Monitor</h1>
-                    <p>Real-time pulse tracking and ping validation for all connected nodes.</p>
-                </div>
-                <button class="btn btn-secondary" onclick="window.heartbeatOps.clearLog()">Clear Pulse Log</button>
-            </div>
-            
-            <div class="heartbeat-container">
-                <div class="pulse-ring-container">
-                    <div class="pulse-ring"></div>
-                    <div class="pulse-ring"></div>
-                    <div class="pulse-ring"></div>
-                    <div class="center-node">📡</div>
-                    <div style="position: absolute; bottom: 20px; color: var(--neon-green); font-family: var(--font-mono); font-weight: bold; z-index: 10;">
-                        SCANNING FOR PULSE...
+                        <label class="ti-label" style="margin-top: 8px;">Color Selection</label>
+                        <div class="ti-color-pickers">
+                            <div class="ti-picker-group">
+                                <span>Color 1</span>
+                                <input type="color" id="thCol1" class="ti-color-input ripple-target" value="#0a0e17" oninput="updateThemePreview()">
+                            </div>
+                            <div class="ti-picker-group" id="thCol2Group">
+                                <span>Color 2</span>
+                                <input type="color" id="thCol2" class="ti-color-input ripple-target" value="#1a1f2e" oninput="updateThemePreview()">
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="heartbeat-log-panel">
-                    <div class="heartbeat-header">
-                        <span>LATEST PINGS DETECTED</span>
-                        <span id="pingCounter">Total Pings: 0</span>
-                    </div>
-                    <div class="heartbeat-list" id="heartbeatList">
-                        <div style="color: var(--text-muted); text-align: center; margin-top: 50px; font-style: italic;">
-                            Waiting for node telemetry...
+                    <div class="ti-section">
+                        <h4 class="ti-heading">Pro Presets</h4>
+                        <div class="ti-presets-grid">
+                            <div class="ti-preset ripple-target" style="background: #0a0e17;" onclick="previewPreset(this)">Original</div>
+                            <div class="ti-preset ripple-target" style="background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);" onclick="previewPreset(this)">Ocean</div>
+                            <div class="ti-preset ripple-target" style="background: radial-gradient(circle at top left, #2b1055, #000);" onclick="previewPreset(this)">Nebula</div>
+                            <div class="ti-preset ripple-target" style="background: linear-gradient(135deg, #1e130c, #9a8478);" onclick="previewPreset(this)">Mocha</div>
+                            <div class="ti-preset ripple-target" style="background: linear-gradient(to right, #000000, #434343);" onclick="previewPreset(this)">Carbon</div>
+                            <div class="ti-preset ripple-target" style="background: radial-gradient(circle at center, #0f3443, #34e89e);" onclick="previewPreset(this)">Toxic</div>
+                            <div class="ti-preset ripple-target" style="background: linear-gradient(135deg, #4338ca, #312e81);" onclick="previewPreset(this)">Indigo</div>
+                            <div class="ti-preset ripple-target" style="background: linear-gradient(to bottom, #111827, #374151);" onclick="previewPreset(this)">Slate</div>
                         </div>
                     </div>
                 </div>
+                
             </div>
-        </div>
-
-        <div id="view-serial" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1 style="color: #0cf3a2;">Web Serial Terminal</h1>
-                    <p>Direct USB communication from the browser. No Arduino IDE required.</p>
-                </div>
+            <div class="modal-actions" style="margin-top: 32px;">
+                <button class="modal-btn secondary ripple-target" onclick="hideModal(); initTheme();">Discard Changes</button>
+                <button class="modal-btn primary ripple-target" onclick="saveTheme()">Save Appearance</button>
             </div>
-            
-            <div class="serial-console">
-                <div class="serial-toolbar">
-                    <button class="btn btn-primary" id="btnSerialConnect" onclick="window.serialOps.connect()">🔌 Connect to USB Port</button>
-                    <select id="serialBaudRate" style="width: 200px;">
-                        <option value="9600">9600 Baud</option>
-                        <option value="115200" selected>115200 Baud (DBP Default)</option>
-                    </select>
-                    <div style="flex-grow: 1;"></div>
-                    <button class="btn btn-secondary" onclick="document.getElementById('serialOutput').innerHTML=''">Clear Console</button>
-                </div>
-                
-                <div class="serial-output" id="serialOutput">
-                    <div style="color: #555;">// Waiting for Web Serial Connection...</div>
-                    <div style="color: #555;">// Ensure no other program (like Arduino IDE) is using the COM port.</div>
-                </div>
-                
-                <div class="serial-input-area">
-                    <input type="text" id="serialInput" placeholder="Send serial data to board..." onkeypress="if(event.key === 'Enter') window.serialOps.send()">
-                    <button class="btn btn-primary" style="border-radius: 0;" onclick="window.serialOps.send()">SEND</button>
-                </div>
-            </div>
-        </div>
+        `);
+        updateThemePreview(true);
+    });
+}
 
-        <div id="view-analytics" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1>Network Analytics</h1>
-                    <p>Visual telemetry data for your active fleet.</p>
-                </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-                <div style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; height: 400px;">
-                    <h3 style="margin-top: 0; color: var(--text-muted); font-size: 1rem;">Live RSSI (Signal Strength)</h3>
-                    <canvas id="rssiChart"></canvas>
-                </div>
-                <div style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; height: 400px;">
-                    <h3 style="margin-top: 0; color: var(--text-muted); font-size: 1rem;">Memory Allocation (Free Heap)</h3>
-                    <canvas id="heapChart"></canvas>
-                </div>
-            </div>
-        </div>
+function previewPreset(el) { 
+    document.getElementById('thPreview').style.background = el.style.background; 
+    document.documentElement.style.setProperty('--app-bg', el.style.background); 
+}
 
-        <div id="view-logs" class="view-section">
-            <div class="header-box">
-                <div>
-                    <h1>System Audit Logs</h1>
-                    <p>Immutable record of all commands, OTA pushes, and system events.</p>
-                </div>
-            </div>
-            <div style="background: #000; border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; height: 600px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.9rem;" id="auditLogContainer">
-                Loading secure logs...
-            </div>
-        </div>
+function updateThemePreview(isInitialLoad = false) {
+    const type = document.getElementById('thType').value; 
+    const c1 = document.getElementById('thCol1').value; 
+    const c2 = document.getElementById('thCol2').value;
+    const col2Group = document.getElementById('thCol2Group');
 
-    </main>
+    if (type === 'solid') {
+        col2Group.classList.add('hidden');
+    } else {
+        col2Group.classList.remove('hidden');
+    }
 
-    <script>
-        /**
-         * The primary User Interface controller.
-         * Handles toast notifications, navigation routing, modal toggles, and UI security.
-         * @namespace ui
-         */
-        window.ui = {
-            
-            /**
-             * Security Sanitizer (XSS HTML Protection)
-             * Prevents injection attacks if malicious code is rendered to the DOM.
-             * @param {string} str - Raw string from database.
-             * @returns {string} - Clean, web-safe string.
-             */
-            escapeHTML: (str) => {
-                if (!str) return "";
-                return String(str).replace(/[&<>'"]/g, 
-                    tag => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[tag] || tag)
-                );
-            },
+    if (isInitialLoad) return; 
 
-            /**
-             * Security Sanitizer (JS String Literal Escaping)
-             * CRITICAL FIX: Ensures strings passed into inline onclick='' attributes don't break the quotes.
-             * @param {string} str - Raw string.
-             * @returns {string} - Slash-escaped string safe for JavaScript execution contexts.
-             */
-            escapeJS: (str) => {
-                if (!str) return "";
-                return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            },
-            
-            /**
-             * Triggers a sliding toast notification alert in the bottom right.
-             * @param {string} msg - The message to be displayed inside the toast.
-             * @param {string} type - Defines the styling theme: 'info', 'success', 'warning', 'error'.
-             */
-            toast: (msg, type = 'info') => {
-                const container = document.getElementById('toastContainer');
-                const toast = document.createElement('div'); 
-                toast.className = `toast`;
-                
-                let icon = 'ℹ️'; 
-                let color = 'var(--neon-cyan)';
-                
-                // Determine theme styling based on notification type
-                if (type === 'success') { 
-                    icon = '✅'; 
-                    color = 'var(--neon-green)'; 
-                }
-                if (type === 'error') { 
-                    icon = '❌'; 
-                    color = 'var(--neon-red)'; 
-                }
-                if (type === 'warning') { 
-                    icon = '⚠️'; 
-                    color = 'var(--neon-yellow)'; 
-                }
-                
-                toast.style.borderLeftColor = color;
-                toast.innerHTML = `<span>${icon}</span> <span>${window.ui.escapeHTML(msg)}</span>`;
-                container.appendChild(toast);
-                
-                // Set timeout for graceful CSS fade out
-                setTimeout(() => { 
-                    toast.style.opacity = '0'; 
-                    setTimeout(() => toast.remove(), 300); 
-                }, 3500);
-            },
-            
-            /**
-             * Handles switching between main application views.
-             * Also performs lazy loading for heavy scripts (Monaco IDE, Chart.js) to save bandwidth.
-             * @param {string} id - The specific DOM id of the view to activate (e.g. 'ide', 'devices').
-             * @param {HTMLElement} el - The DOM element of the navigation link clicked.
-             */
-            nav: (id, el) => {
-                // Clear active styling from all navigation sidebar items
-                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-                
-                // Hide all main view container sections
-                document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
-                
-                // Apply active styling to the clicked item and show corresponding view
-                el.classList.add('active'); 
-                document.getElementById('view-' + id).classList.add('active');
-                
-                // Lazy Load: Initialize the Monaco C++ editor only if the IDE tab is accessed
-                if (id === 'ide' && !window.ideInited) { 
-                    window.initIDE(); 
-                    window.ideInited = true; 
-                }
-                
-                // Lazy Load: Force a render update on Chart.js canvas contexts when analytics tab is opened
-                if (id === 'analytics') { 
-                    if (window.renderCharts) window.renderCharts(); 
-                }
-            },
-            
-            /**
-             * Iterates through all elements with the .modal-overlay class and sets display to none.
-             * Used globally as a generalized closing mechanism for popups.
-             */
-            closeModals: () => {
-                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-            },
-            
-            /**
-             * Applies filtering logic to the main Fleet Telemetry grid.
-             * @param {string} type - The filter category: 'all', 'online', 'offline'.
-             * @param {HTMLElement} el - The DOM element of the specific filter pill clicked.
-             */
-            filter: (type, el) => {
-                // Reset all filter pills to default unselected styling
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.style.borderColor = 'var(--panel-border)'; 
-                    btn.style.color = 'var(--text-muted)';
-                });
-                
-                // Highlight the currently active filter pill
-                el.style.borderColor = 'var(--neon-cyan)'; 
-                el.style.color = 'var(--neon-cyan)';
-                window.currentDeviceFilter = type;
-                
-                // Trigger a re-render of the device grid with the new filter parameters
-                if (window.renderDevices) {
-                    window.renderDevices();
-                }
-            }
-        };
+    const bgString = type === 'solid' ? c1 : `${type}${c1}, ${c2})`;
+    document.getElementById('thPreview').style.background = bgString;
+    document.documentElement.style.setProperty('--app-bg', bgString); 
+}
 
-        /**
-         * System Authentication Controller.
-         * Handles user login validation and secure localStorage session tokens.
-         * @namespace auth
-         */
-        window.auth = {
-            
-            /**
-             * Validates the provided master key against the hardcoded hash.
-             * Grants or denies system UI access.
-             */
-            login: () => {
-                const input = document.getElementById('passwordInput').value;
-                if (input === "DBP_236562_DBP_9827700975_DBP") {
-                    localStorage.setItem('dbp_auth', 'true'); 
-                    document.getElementById('lockScreen').style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        document.getElementById('lockScreen').style.display = 'none';
-                    }, 300);
-                    
-                    if (window.sysLog) {
-                        window.sysLog("ADMIN LOGIN", "System access granted via Master Password.");
-                    }
-                } else { 
-                    document.getElementById('authError').style.display = 'block';
-                    document.getElementById('passwordInput').value = ''; 
-                }
-            },
-            
-            /**
-             * Clears the current session token and forces a hard browser reload, re-locking the system.
-             */
-            logout: () => { 
-                localStorage.removeItem('dbp_auth'); 
-                location.reload(); 
-            }
-        };
+function saveTheme() {
+    const bg = document.getElementById('thPreview').style.background; 
+    localStorage.setItem(KEYS.theme, bg); 
+    hideModal(); 
+    showToast('Theme Applied 🎨');
+}
+
+// --- 4. ADVANCED CATEGORY MANAGEMENT & GRID ---
+function renderGrid() {
+    const container = document.getElementById('sectionsContainer'); 
+    if(!container) return;
+    container.innerHTML = '';
+    
+    Object.keys(links).forEach((section, index) => {
+        if(links[section].length === 0) return; 
+        const secDiv = document.createElement('div'); secDiv.className = 'section'; secDiv.id = `section-${section}`;
+        secDiv.style.animationDelay = `${index * 0.15}s`; 
         
-        // --- Persistence Check ---
-        // Automatically dismisses the lock screen if a valid session token is found in localStorage
-        if (localStorage.getItem('dbp_auth') === 'true') {
-            document.getElementById('lockScreen').style.display = 'none';
+        const titleText = section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        let html = `
+            <div class="section-header">
+                <div class="section-title-wrap ripple-target" onclick="toggleSection('section-${section}')">
+                    <h2>📁 ${titleText}</h2>
+                    <span class="badge">${links[section].length} apps</span>
+                </div>
+                <div class="section-controls">
+                    <button class="icon-action-btn ripple-target" onclick="moveCategory('${section}', 'up')" title="Move Up">↑</button>
+                    <button class="icon-action-btn ripple-target" onclick="moveCategory('${section}', 'down')" title="Move Down">↓</button>
+                    <button class="icon-action-btn accent ripple-target" onclick="openEditCategoryModal('${section}')" title="Edit Category">✏️</button>
+                    <button class="icon-action-btn ripple-target" onclick="toggleSection('section-${section}')" title="Toggle Section"><span class="toggle-icon">▼</span></button>
+                </div>
+            </div>
+            <div class="grid" id="grid-${section}" data-section="${section}">
+        `;
+        
+        links[section].forEach((link, idx) => { 
+            html += `<a class="link-card ripple-target" href="${link.url}" target="_blank" data-id="${link.id}" data-section="${section}" draggable="true" style="animation-delay: ${idx * 0.05}s">
+                <div class="card-icon">${link.icon}</div>
+                <div class="label">${link.label}</div>
+                <div class="url">${new URL(link.url).hostname.replace('www.','')}</div>
+                <div class="tags">${link.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+            </a>`; 
+        });
+        html += `</div>`; secDiv.innerHTML = html; container.appendChild(secDiv);
+        attachDashboardDragListeners(document.getElementById(`grid-${section}`));
+    });
+}
+
+function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+// Category Movers
+window.moveCategory = function(section, direction) {
+    const keys = Object.keys(links);
+    const idx = keys.indexOf(section);
+    if (direction === 'up' && idx > 0) { [keys[idx - 1], keys[idx]] = [keys[idx], keys[idx - 1]]; } 
+    else if (direction === 'down' && idx < keys.length - 1) { [keys[idx], keys[idx + 1]] = [keys[idx + 1], keys[idx]]; } 
+    else { return; }
+    
+    const newLinks = {};
+    keys.forEach(k => newLinks[k] = links[k]);
+    links = newLinks;
+    saveLinksAndRender(true);
+}
+
+// Edit Category Modal
+window.openEditCategoryModal = function(oldName) {
+    showModal(`
+        <h3 style="margin-bottom:24px; text-align:center;">📁 Edit Category</h3>
+        <label style="font-size:14px; font-weight:700; color:var(--muted); margin-bottom:8px; display:block;">Category Name</label>
+        <input type="text" id="editCategoryName" class="modal-input" value="${oldName.replace(/_/g, ' ')}">
+        <div class="modal-actions">
+            <button class="modal-btn danger ripple-target" onclick="deleteCategory('${oldName}')">Delete Entire Category</button>
+            <button class="modal-btn secondary ripple-target" onclick="hideModal()">Cancel</button>
+            <button class="modal-btn primary ripple-target" onclick="saveCategoryName('${oldName}')">Save Name</button>
+        </div>
+    `);
+}
+
+window.saveCategoryName = function(oldName) {
+    const newNameRaw = document.getElementById('editCategoryName').value.trim();
+    if(!newNameRaw) return showToast("Name cannot be empty", true);
+    const newName = newNameRaw.toLowerCase().replace(/\s+/g, '_');
+    
+    if (newName !== oldName) {
+        if(links[newName]) return showToast("Category already exists", true);
+        const newLinks = {};
+        Object.keys(links).forEach(k => {
+            if(k === oldName) newLinks[newName] = links[oldName];
+            else newLinks[k] = links[k];
+        });
+        links = newLinks;
+    }
+    saveLinksAndRender(true); hideModal(); showToast("Category Updated ✨");
+}
+
+window.deleteCategory = function(name) {
+    if(confirm(`WARNING: Are you sure you want to completely delete the category "${name}" and all links inside it?`)) {
+        delete links[name]; saveLinksAndRender(true); hideModal(); showToast("Category Deleted 🗑️");
+    }
+}
+
+function createBackup() { localStorage.setItem(KEYS.backup, localStorage.getItem(KEYS.links)); const ub = document.getElementById('undoBtn'); if(ub) ub.style.display = 'flex'; }
+function saveLinksAndRender(backup = true) { if(backup) createBackup(); localStorage.setItem(KEYS.links, JSON.stringify(links)); renderGrid(); renderHotbar(); }
+
+const undoBtn = document.getElementById('undoBtn');
+if(undoBtn) {
+    undoBtn.addEventListener('click', () => {
+        const backup = localStorage.getItem(KEYS.backup);
+        if(backup) { links = JSON.parse(backup); saveLinksAndRender(false); showToast('Restored previous state! ↩️'); undoBtn.style.display = 'none'; }
+    });
+}
+
+function attachDashboardDragListeners(grid) {
+    if(!grid) return;
+    grid.addEventListener('dragover', (e) => {
+        e.preventDefault(); if(dragData.type === 'hotbar') return; 
+        grid.classList.add('drag-over');
+        const afterElement = getDragAfterElement(grid, e.clientX, e.clientY);
+        if (dragData.element) { if (afterElement == null) grid.appendChild(dragData.element); else grid.insertBefore(dragData.element, afterElement); }
+    });
+    grid.addEventListener('dragleave', () => grid.classList.remove('drag-over'));
+    grid.addEventListener('drop', (e) => { e.preventDefault(); grid.classList.remove('drag-over'); if(dragData.type === 'dashboard') recalculateLinksState(); });
+
+    grid.querySelectorAll('.link-card').forEach(card => {
+        card.addEventListener('dragstart', () => { dragData = { type: 'dashboard', element: card, sourceSection: card.dataset.section, sourceId: card.dataset.id }; setTimeout(() => card.classList.add('dragging'), 0); });
+        card.addEventListener('dragend', () => { card.classList.remove('dragging'); document.querySelectorAll('.grid').forEach(g => g.classList.remove('drag-over')); document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('drag-over')); dragData = { type: null }; });
+        card.addEventListener('click', (e) => { if(card.classList.contains('dragging')) e.preventDefault(); });
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); contextMenuTarget = { id: card.dataset.id, section: card.dataset.section, url: card.href };
+            const menu = document.getElementById('contextMenu'); if(menu) { menu.style.left = `${e.clientX}px`; menu.style.top = `${e.clientY}px`; menu.classList.add('active'); }
+        });
+    });
+}
+
+function getDragAfterElement(container, x, y) {
+    const draggableElements = [...container.querySelectorAll('.link-card:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => { 
+        const box = child.getBoundingClientRect(); const offsetX = x - box.left - box.width / 2; const offsetY = y - box.top - box.height / 2;
+        if (offsetY < box.height/2 && offsetY > -box.height/2 && offsetX < 0 && offsetX > closest.offsetX) { return { offsetX: offsetX, element: child }; } else { return closest; }
+    }, { offsetX: Number.NEGATIVE_INFINITY }).element;
+}
+
+function recalculateLinksState() {
+    createBackup();
+    Object.keys(links).forEach(section => {
+        const grid = document.getElementById(`grid-${section}`); if(!grid) return; const newOrder = [];
+        grid.querySelectorAll('.link-card').forEach(card => { 
+            let originalItem = null;
+            for(const sec of Object.keys(links)) { const found = links[sec].find(l => l.id === card.dataset.id); if(found) { originalItem = found; break; } }
+            if(originalItem) newOrder.push(originalItem); 
+        });
+        links[section] = newOrder;
+    }); saveLinksAndRender(false);
+}
+
+// --- 5. HOTBAR ENGINE (MINECRAFT STYLE D&D) ---
+function renderHotbar() {
+    const container = document.getElementById('hotbarContainer'); 
+    if(!container) return;
+    container.innerHTML = '';
+    for(let i=0; i<9; i++) {
+        const item = hotbar[i]; const div = document.createElement('button');
+        div.className = `hotbar-slot ripple-target ${item ? '' : 'empty'}`; div.dataset.index = i;
+        if (item) {
+            div.draggable = true; div.innerHTML = `<span class="hotbar-num">${i+1}</span>${item.icon}`; div.title = `${item.label} (Press ${i+1})`;
+            div.onclick = (e) => { if(!div.classList.contains('dragging')) window.open(item.url, '_blank'); };
+            div.oncontextmenu = (e) => { e.preventDefault(); hotbarContextTarget = i; const menu = document.getElementById('hotbarContextMenu'); if(menu){ menu.style.left = `${e.clientX}px`; menu.style.top = `${e.clientY - 50}px`; menu.classList.add('active'); } };
+            div.addEventListener('dragstart', () => { dragData = { type: 'hotbar', element: div, hotbarIndex: i }; setTimeout(() => div.classList.add('dragging'), 0); });
+            div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('drag-over')); dragData = { type: null }; });
+        } else {
+            div.innerHTML = `<span class="hotbar-num">${i+1}</span>+`; div.title = `Empty Slot ${i+1}`; 
+            div.onclick = () => showToast("Right-click a link above to pin it here!");
         }
-
-        // --- 3. Cloud IDE Initialization (Monaco Editor) ---
-        window.editor = null; 
-        window.currentSketchId = null;
         
-        /**
-         * Asynchronously loads and configures the Microsoft Monaco Editor.
-         * This provides full C++ syntax highlighting inside the browser.
-         */
-        window.initIDE = () => {
-            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
-            require(['vs/editor/editor.main'], function() {
-                window.editor = monaco.editor.create(document.getElementById('editorContainer'), {
-                    value: '// Welcome to DBP Cloud IDE\n// The DBP_Cloud.h library is injected automatically during compile.\n\nvoid setup() {\n  // Place setup code here\n  pinMode(2, OUTPUT);\n}\n\nvoid loop() {\n  // Place main code here\n  digitalWrite(2, HIGH);\n  delay(1000);\n  digitalWrite(2, LOW);\n  delay(1000);\n}',
-                    language: 'cpp', 
-                    theme: 'vs-dark', 
-                    automaticLayout: true, 
-                    minimap: { enabled: false }, 
-                    fontSize: 14
-                });
-            });
-        };
-        
-        /**
-         * Web Serial API Controller.
-         * Interfaces directly with the computer's USB COM ports to read ESP32 output.
-         * @namespace serialOps
-         */
-        window.serialOps = {
-            port: null, 
-            reader: null, 
-            writer: null, 
-            keepReading: true,
-            
-            /**
-             * Prompts the user to select a USB COM port and initiates a streaming connection.
-             */
-            connect: async () => {
-                if (!("serial" in navigator)) {
-                    return window.ui.toast("Web Serial not supported in this browser. Use Chrome/Edge desktop.", "error");
-                }
-                
-                try {
-                    const baud = parseInt(document.getElementById('serialBaudRate').value);
-                    window.serialOps.port = await navigator.serial.requestPort();
-                    await window.serialOps.port.open({ baudRate: baud });
-                    
-                    window.ui.toast("USB Connected at " + baud + " baud.", "success");
-                    
-                    const btn = document.getElementById('btnSerialConnect');
-                    btn.innerText = "✅ Connected"; 
-                    btn.classList.replace("btn-primary", "btn-secondary");
-                    
-                    window.serialOps.keepReading = true;
-                    window.serialOps.readLoop();
-                } catch (e) { 
-                    window.ui.toast("Serial connection failed. Check permissions.", "error"); 
-                }
-            },
-            
-            /**
-             * Infinite loop that continuously decodes raw byte chunks from the USB line into human-readable text.
-             */
-            readLoop: async () => {
-                while (window.serialOps.port.readable && window.serialOps.keepReading) {
-                    window.serialOps.reader = window.serialOps.port.readable.getReader();
-                    try {
-                        while (true) {
-                            const { value, done } = await window.serialOps.reader.read();
-                            if (done) break;
-                            
-                            const text = new TextDecoder().decode(value);
-                            const out = document.getElementById('serialOutput');
-                            
-                            // Prevent XSS in terminal output
-                            out.innerHTML += window.ui.escapeHTML(text).replace(/\n/g, '<br>');
-                            out.scrollTop = out.scrollHeight; // Auto-scrolls to the bottom
-                        }
-                    } catch (e) { 
-                        // Silent fail on read interruption (e.g., USB unplugged)
-                    } finally { 
-                        // Release lock so the port can be closed or written to safely
-                        window.serialOps.reader.releaseLock(); 
-                    }
-                }
-            },
-            
-            /**
-             * Encodes a string payload and transmits it across the USB TX line to the physical board.
-             */
-            send: async () => {
-                if (!window.serialOps.port) {
-                    return window.ui.toast("Connect to USB first.", "warning");
-                }
-                
-                const input = document.getElementById('serialInput'); 
-                const data = input.value + "\n";
-                if (!data || data === "\n") return;
-                
-                try {
-                    const encoder = new TextEncoder(); 
-                    window.serialOps.writer = window.serialOps.port.writable.getWriter();
-                    await window.serialOps.writer.write(encoder.encode(data)); 
-                } catch (e) {
-                    window.ui.toast("Failed to write to port.", "error");
-                } finally {
-                    // CRITICAL FIX: Ensure the writer lock is always released even if write fails
-                    if (window.serialOps.writer) {
-                        window.serialOps.writer.releaseLock();
-                    }
-                }
-                
-                // Echo the transmitted command visually on the UI console
-                const out = document.getElementById('serialOutput');
-                out.innerHTML += `<div style="color:var(--neon-cyan);">> TX: ${window.ui.escapeHTML(data)}</div>`;
-                out.scrollTop = out.scrollHeight; 
-                input.value = '';
-            }
-        };
-
-        /**
-         * Heartbeat Monitor Visual Controller.
-         * Handles the animated log rendering for active ping synchronizations.
-         * @namespace heartbeatOps
-         */
-        window.heartbeatOps = {
-            totalPings: 0,
-            
-            /**
-             * Resets the visual ping counter and clears the DOM log container.
-             */
-            clearLog: () => {
-                document.getElementById('heartbeatList').innerHTML = '';
-                window.heartbeatOps.totalPings = 0;
-                document.getElementById('pingCounter').innerText = "Total Pings: 0";
-                window.ui.toast("Heartbeat log cleared", "info");
-            },
-            
-            /**
-             * Constructs a new DOM element representing a received telemetry ping and injects it into the view.
-             * @param {string} deviceName - The readable name of the node emitting the ping.
-             * @param {number} timestamp - The UNIX epoch timestamp of the ping (in seconds).
-             */
-            logPing: (deviceName, timestamp) => {
-                const list = document.getElementById('heartbeatList');
-                if (window.heartbeatOps.totalPings === 0) list.innerHTML = '';
-                
-                window.heartbeatOps.totalPings++;
-                document.getElementById('pingCounter').innerText = `Total Pings: ${window.heartbeatOps.totalPings}`;
-
-                const item = document.createElement('div');
-                item.className = 'heartbeat-item';
-                
-                // Format timestamp accurately based on system locale
-                const timeString = new Date(timestamp * 1000).toLocaleTimeString();
-                
-                item.innerHTML = `
-                    <span class="ping-time">[${timeString}]</span>
-                    <span class="ping-device">${window.ui.escapeHTML(deviceName)}</span>
-                    <span class="ping-status">
-                        <div class="status-dot" style="width:8px;height:8px;margin:0;"></div> 
-                        PING REC'V
-                    </span>
-                `;
-                
-                // Prepend to top of list for chronological downward flow
-                list.insertBefore(item, list.firstChild);
-                
-                // Memory Protection: Cap list at 50 elements to prevent DOM bloat leading to browser lag
-                if (list.children.length > 50) {
-                    list.removeChild(list.lastChild);
-                }
-            }
-        };
-        
-        /**
-         * System Drag and Drop UI Handlers for the Firmware Vault.
-         * Ensures that dropping a .bin file does not redirect the browser natively.
-         */
-        document.addEventListener("DOMContentLoaded", () => {
-            const dropZone = document.getElementById('dropZone');
-            const fwInput = document.getElementById('fwInput');
-
-            if (dropZone && fwInput) {
-                // Prevent default browser behavior (opening the file instead of uploading)
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }, false);
-                });
-
-                // Highlight drop zone on hover
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, () => {
-                        dropZone.style.borderColor = "var(--neon-cyan)";
-                        dropZone.style.backgroundColor = "rgba(0, 242, 254, 0.1)";
-                    }, false);
-                });
-
-                // Remove highlight when dragging leaves
-                ['dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, () => {
-                        dropZone.style.borderColor = "var(--neon-purple)";
-                        dropZone.style.backgroundColor = "rgba(188, 19, 254, 0.05)";
-                    }, false);
-                });
-
-                // Handle the actual physical drop event
-                dropZone.addEventListener('drop', (e) => {
-                    let dt = e.dataTransfer;
-                    let files = dt.files;
-                    
-                    if (files.length > 0) {
-                        // Assign the dropped files to the hidden input
-                        fwInput.files = files; 
-                        
-                        // Manually trigger the 'change' event so the Firebase upload script catches it
-                        const event = new Event('change');
-                        fwInput.dispatchEvent(event); 
-                    }
-                });
-                
-                // Allow clicking anywhere on the zone to trigger the file browser
-                dropZone.addEventListener('click', () => {
-                    fwInput.click();
-                });
+        div.addEventListener('dragover', (e) => { e.preventDefault(); div.classList.add('drag-over'); });
+        div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+        div.addEventListener('drop', (e) => {
+            e.preventDefault(); div.classList.remove('drag-over'); const targetIdx = i;
+            if(dragData.type === 'dashboard') {
+                const link = links[dragData.sourceSection].find(l => l.id === dragData.sourceId);
+                if(link) { hotbar[targetIdx] = link; saveHotbar(); showToast(`Pinned to Slot ${targetIdx+1}`); }
+            } else if(dragData.type === 'hotbar') {
+                const sourceIdx = dragData.hotbarIndex; const temp = hotbar[targetIdx];
+                hotbar[targetIdx] = hotbar[sourceIdx]; hotbar[sourceIdx] = temp; saveHotbar();
             }
         });
-    </script>
+        container.appendChild(div);
+    }
+}
+function saveHotbar() { localStorage.setItem(KEYS.hotbar, JSON.stringify(hotbar)); renderHotbar(); }
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDoc, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+// Context Menu Actions
+document.addEventListener('click', () => { 
+    const cm1 = document.getElementById('contextMenu'); if(cm1) cm1.classList.remove('active'); 
+    const cm2 = document.getElementById('hotbarContextMenu'); if(cm2) cm2.classList.remove('active'); 
+});
 
-        // ==========================================
-        // MASTER FIREBASE CONFIGURATION BINDINGS
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDSLC6o4kay3BtDFiHiuAw45gv8mO4Pc6w",
-            authDomain: "esp32-wireless-uploading.firebaseapp.com",
-            projectId: "esp32-wireless-uploading",
-            storageBucket: "esp32-wireless-uploading.firebasestorage.app",
-            messagingSenderId: "628205953869",
-            appId: "1:628205953869:web:a4c728362bececefa44d04"
-        };
+const ctxOpenNew = document.getElementById('ctxOpenNew');
+if(ctxOpenNew) ctxOpenNew.addEventListener('click', () => { if(contextMenuTarget) window.open(contextMenuTarget.url, '_blank'); });
 
-        // Initialize Firebase Backend Instances
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+const ctxCopy = document.getElementById('ctxCopy');
+if(ctxCopy) ctxCopy.addEventListener('click', () => { if(contextMenuTarget) { navigator.clipboard.writeText(contextMenuTarget.url); showToast('URL Copied! 📋'); }});
 
-        /**
-         * Global System Event Logger.
-         * Appends crucial administrative actions to an immutable Firestore database collection.
-         * @param {string} action - High level category (e.g. "NODE DELETED").
-         * @param {string} details - Granular specification string.
-         */
-        window.sysLog = async (action, details) => {
-            try { 
-                await addDoc(collection(db, "auditLogs"), { 
-                    timestamp: Date.now(), 
-                    action: window.ui.escapeHTML(action), 
-                    details: window.ui.escapeHTML(details) 
-                }); 
-            } catch(e) {
-                // Fails silently if user has restricted access rules
-            }
-        };
+const ctxEdit = document.getElementById('ctxEdit');
+if(ctxEdit) ctxEdit.addEventListener('click', () => { if(contextMenuTarget) openEditModal(contextMenuTarget.section, contextMenuTarget.id); });
 
-        // Query definition for the System Audit Log (Requests last 50 entries descending)
-        const qLogs = query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(50));
+const ctxDelete = document.getElementById('ctxDelete');
+if(ctxDelete) ctxDelete.addEventListener('click', () => { if(contextMenuTarget) { links[contextMenuTarget.section] = links[contextMenuTarget.section].filter(l => l.id !== contextMenuTarget.id); saveLinksAndRender(true); showToast('Link Deleted 🗑️'); } });
+
+const ctxPinHotbar = document.getElementById('ctxPinHotbar');
+if(ctxPinHotbar) ctxPinHotbar.addEventListener('click', () => {
+    if(contextMenuTarget) {
+        const link = links[contextMenuTarget.section].find(l => l.id === contextMenuTarget.id);
+        if(link) {
+            const emptyIdx = hotbar.findIndex(s => s === null);
+            if(emptyIdx !== -1) { hotbar[emptyIdx] = link; saveHotbar(); showToast(`Pinned ${link.label} to Slot ${emptyIdx+1} ⭐`); } 
+            else { showToast('Hotbar is full! Remove an item first.', true); }
+        }
+    }
+});
+
+const ctxRemoveHotbar = document.getElementById('ctxRemoveHotbar');
+if(ctxRemoveHotbar) ctxRemoveHotbar.addEventListener('click', () => { if(hotbarContextTarget !== null) { hotbar[hotbarContextTarget] = null; saveHotbar(); showToast('Removed from Hotbar'); } });
+
+// --- 6. SEARCH ENGINE ---
+let searchSelectedIndex = -1; const searchBar = document.getElementById('searchBar'); const suggBox = document.getElementById('suggestions');
+if(searchBar && suggBox) {
+    searchBar.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim(); searchSelectedIndex = -1;
+        if(!query) { suggBox.style.display = 'none'; return; }
+        const matches = []; Object.values(links).forEach(sec => sec.forEach(l => { if(l.label.toLowerCase().includes(query) || l.url.toLowerCase().includes(query) || l.tags.some(t=>t.toLowerCase().includes(query))) matches.push(l); }));
+        if(matches.length > 0) {
+            suggBox.innerHTML = matches.slice(0, 8).map((l, i) => `<div class="suggestion-item ripple-target" data-index="${i}" onclick="window.open('${l.url}', '_blank'); document.getElementById('searchBar').value=''; document.getElementById('suggestions').style.display='none';"><div class="suggestion-icon">${l.icon}</div><div class="suggestion-details"><span class="suggestion-label">${l.label}</span><span class="suggestion-url">${l.url}</span></div></div>`).join('');
+            suggBox.style.display = 'block';
+        } else { suggBox.innerHTML = `<div class="suggestion-item" style="color:var(--muted); justify-content:center;">No links found</div>`; suggBox.style.display = 'block'; }
+    });
+    searchBar.addEventListener('keydown', (e) => {
+        const items = suggBox.querySelectorAll('.suggestion-item'); if(items.length === 0) return;
+        if(e.key === 'ArrowDown') { e.preventDefault(); searchSelectedIndex = (searchSelectedIndex + 1) % items.length; updateSearchSelection(items); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); searchSelectedIndex = (searchSelectedIndex - 1 + items.length) % items.length; updateSearchSelection(items); }
+        else if (e.key === 'Enter' && searchSelectedIndex >= 0) items[searchSelectedIndex].click();
+    });
+}
+function updateSearchSelection(items) { items.forEach((item, i) => { if(i === searchSelectedIndex) item.classList.add('active'); else item.classList.remove('active'); }); }
+document.addEventListener('click', (e) => { const sc = document.querySelector('.search-container'); if(sc && !e.target.closest('.search-container')) { if(suggBox) suggBox.style.display = 'none'; } });
+
+// --- 7. ADVANCED APP-GRADE POMODORO ENGINE ---
+let timerSettings = JSON.parse(localStorage.getItem(KEYS.timerSettings)) || { work: 25, short: 5, long: 15 };
+let currentTimerMode = 'work';
+let pomoCycle = 1; 
+let timerInterval = null; 
+let timerTotalSeconds = timerSettings.work * 60; 
+let timerSecondsLeft = timerTotalSeconds;
+let sessionsCompleted = parseInt(localStorage.getItem(KEYS.sessions)) || 0;
+let soundEnabled = true;
+
+const progressRing = document.getElementById('pomoProgress');
+const ringCircumference = 2 * Math.PI * 110; 
+if(progressRing) progressRing.style.strokeDasharray = ringCircumference;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playChime() {
+    if(!soundEnabled) return;
+    try {
+        const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+        osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 1.5);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 0.1); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+        osc.start(); osc.stop(audioCtx.currentTime + 2);
+    } catch(e) {}
+}
+
+function initTimer() { updateCycleUI(); updateTimerDisplay(); }
+
+function updateCycleUI() {
+    const ps = document.getElementById('pomoSessions');
+    if(ps) ps.textContent = sessionsCompleted;
+    const dots = document.querySelectorAll('.cycle-dot');
+    dots.forEach((dot, idx) => {
+        dot.className = 'cycle-dot'; 
+        if (idx + 1 < pomoCycle) dot.classList.add('completed');
+        else if (idx + 1 === pomoCycle) dot.classList.add('current');
+    });
+}
+
+function updateTimerDisplay() {
+    const m = Math.floor(timerSecondsLeft / 60).toString().padStart(2, '0'); const s = (timerSecondsLeft % 60).toString().padStart(2, '0');
+    const timeString = `${m}:${s}`; 
+    const pDisp = document.getElementById('pomoDisplay');
+    if(pDisp) pDisp.textContent = timeString;
+    
+    if(progressRing) {
+        const progressPercent = timerSecondsLeft / timerTotalSeconds;
+        progressRing.style.strokeDashoffset = ringCircumference - (progressPercent * ringCircumference);
+    }
+    
+    const ft = document.getElementById('focusTask');
+    if (timerInterval) document.title = `(${timeString}) ${ft ? ft.value || 'Focus' : 'Focus'} - DBP`; else document.title = ORIGINAL_TITLE;
+}
+
+const timerSettingsBtn = document.getElementById('timerSettingsBtn');
+if(timerSettingsBtn) {
+    timerSettingsBtn.addEventListener('click', () => {
+        showModal(`
+            <h3 style="margin-bottom:24px; text-align:center;">⚙️ Flow Settings</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                <div style="text-align:center;">
+                    <label style="font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase;">Focus (m)</label>
+                    <input type="number" id="cfgWork" class="modal-input" value="${timerSettings.work}" min="1" max="120" style="text-align:center; margin-top:8px;">
+                </div>
+                <div style="text-align:center;">
+                    <label style="font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase;">Short (m)</label>
+                    <input type="number" id="cfgShort" class="modal-input" value="${timerSettings.short}" min="1" max="30" style="text-align:center; margin-top:8px;">
+                </div>
+                <div style="text-align:center;">
+                    <label style="font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase;">Long (m)</label>
+                    <input type="number" id="cfgLong" class="modal-input" value="${timerSettings.long}" min="1" max="60" style="text-align:center; margin-top:8px;">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary ripple-target" onclick="hideModal()">Discard</button>
+                <button class="modal-btn primary ripple-target" onclick="saveTimerSettings()">Save Profile</button>
+            </div>
+        `);
+    });
+}
+
+window.saveTimerSettings = function() {
+    timerSettings = { work: parseInt(document.getElementById('cfgWork').value)||25, short: parseInt(document.getElementById('cfgShort').value)||5, long: parseInt(document.getElementById('cfgLong').value)||15 };
+    localStorage.setItem(KEYS.timerSettings, JSON.stringify(timerSettings));
+    if(!timerInterval && currentTimerMode !== 'custom') {
+        timerTotalSeconds = timerSettings[currentTimerMode] * 60; timerSecondsLeft = timerTotalSeconds; updateTimerDisplay();
+    }
+    hideModal(); showToast('Timer Profile Saved');
+}
+
+window.applyCustomTimer = function() {
+    let mins = parseInt(document.getElementById('customTimerMins').value);
+    if(!mins || mins < 1) mins = 25;
+    timerTotalSeconds = mins * 60; timerSecondsLeft = timerTotalSeconds;
+    updateTimerDisplay(); hideModal(); showToast(`Custom Phase set to ${mins}m ⏱️`);
+}
+
+function switchTimerMode(mode) {
+    document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active')); 
+    const targetBtn = document.querySelector(`.pomo-mode-btn[data-type="${mode}"]`);
+    if(targetBtn) targetBtn.classList.add('active');
+    
+    clearInterval(timerInterval); timerInterval = null; 
+    if(progressRing) progressRing.classList.remove('active');
+    
+    const psStart = document.getElementById('pomoStart');
+    const psPause = document.getElementById('pomoPause');
+    const psSkip = document.getElementById('pomoSkip');
+    const psStat = document.getElementById('pomoStatus');
+    
+    if(psStart) psStart.style.display = 'block'; 
+    if(psPause) psPause.style.display = 'none'; 
+    if(psSkip) psSkip.style.display = 'none';
+    
+    currentTimerMode = mode;
+    if (mode === 'work') { if(psStat) psStat.textContent = "Ready to Focus"; }
+    else if (mode === 'short' || mode === 'long') { if(psStat) psStat.textContent = "Ready for a Break"; }
+    
+    if(mode === 'custom') {
+        showModal(`<h3 style="margin-bottom:20px; text-align:center;">⏱️ Custom Phase</h3><label style="font-size:14px; font-weight:700; color:var(--muted); margin-bottom:8px; display:block; text-align:center;">Duration (Minutes)</label><input type="number" id="customTimerMins" class="modal-input" placeholder="e.g. 45" min="1" max="300" style="text-align:center;"><div class="modal-actions"><button class="modal-btn secondary ripple-target" onclick="hideModal()">Cancel</button><button class="modal-btn primary ripple-target" onclick="applyCustomTimer()">Initialize Phase</button></div>`);
+        setTimeout(() => { const c = document.getElementById('customTimerMins'); if(c) c.focus(); }, 100);
+        return;
+    }
+    timerTotalSeconds = timerSettings[currentTimerMode] * 60; timerSecondsLeft = timerTotalSeconds; updateTimerDisplay();
+}
+
+document.querySelectorAll('.pomo-mode-btn').forEach(btn => { btn.addEventListener('click', (e) => switchTimerMode(e.target.dataset.type)); });
+const pdClick = document.getElementById('pomoDisplayClick');
+if(pdClick) pdClick.addEventListener('click', () => { if(timerInterval) return; const cb = document.querySelector('.pomo-mode-btn[data-type="custom"]'); if(cb) cb.click(); });
+
+function endPhase() {
+    clearInterval(timerInterval); timerInterval = null; 
+    if(progressRing) progressRing.classList.remove('active');
+    playChime(); document.title = "Phase Complete - DBP";
+    
+    if(currentTimerMode === 'work') {
+        sessionsCompleted++; localStorage.setItem(KEYS.sessions, sessionsCompleted); 
+        if (pomoCycle % 4 === 0) {
+            switchTimerMode('long'); showModal(`<h3 style="margin-bottom:16px; text-align:center;">🎉 Cycle Complete!</h3><p style="text-align:center; color:var(--muted);">You completed 4 focus sessions. Take a long break.</p><div class="modal-actions"><button class="modal-btn primary ripple-target" onclick="hideModal()">Start Long Break</button></div>`);
+            pomoCycle = 1;
+        } else {
+            switchTimerMode('short'); showModal(`<h3 style="margin-bottom:16px; text-align:center;">⏱️ Phase Complete</h3><p style="text-align:center; color:var(--muted);">Great focus. Time for a short break.</p><div class="modal-actions"><button class="modal-btn primary ripple-target" onclick="hideModal()">Take Break</button></div>`);
+            pomoCycle++;
+        }
+    } else {
+        switchTimerMode('work'); showModal(`<h3 style="margin-bottom:16px; text-align:center;">🔋 Break Over</h3><p style="text-align:center; color:var(--muted);">Ready to drop back in?</p><div class="modal-actions"><button class="modal-btn primary ripple-target" onclick="hideModal()">Let's Go</button></div>`);
+    }
+    updateCycleUI();
+}
+
+const pomoStart = document.getElementById('pomoStart');
+if(pomoStart) {
+    pomoStart.addEventListener('click', () => {
+        if(timerInterval) return; 
+        if(audioCtx.state === 'suspended') audioCtx.resume();
         
-        onSnapshot(qLogs, (snap) => {
-            const cont = document.getElementById('auditLogContainer'); 
-            cont.innerHTML = '';
-            
-            snap.forEach(doc => {
-                const d = doc.data();
-                cont.innerHTML += `
-                    <div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;">
-                        <span style="color:var(--text-muted);">${new Date(d.timestamp).toLocaleString()}</span> 
-                        <strong style="color:var(--neon-purple); margin-left:10px;">[${window.ui.escapeHTML(d.action)}]</strong>
-                        <span style="color:white; margin-left:10px;">${window.ui.escapeHTML(d.details)}</span>
-                    </div>
-                `;
-            });
-        });
-
-        // ==========================================
-        // 1. LIVE FLEET TELEMETRY & HEARTBEAT ENGINE
-        // ==========================================
-        let globalDevices = []; 
-        window.currentDeviceFilter = 'all';
-        let previousLastSeenMap = {};
-
-        /**
-         * Core Database Listener for the "devices" collection.
-         * Triggers instantly whenever a board updates its telemetry or a user alters configuration.
-         */
-        onSnapshot(collection(db, "devices"), (snap) => {
-            let totalCount = 0; 
-            let onlineCount = 0; 
-            let otaCount = 0;
-            
-            const nowSecs = Math.floor(Date.now() / 1000);
-            globalDevices = [];
-            
-            snap.forEach(docSnap => {
-                const d = docSnap.data(); 
-                d.id = docSnap.id;
-                
-                // Determine Online Status via math delta (Timeout Threshold is 30 seconds)
-                d.isOnline = d.lastSeen && (nowSecs - d.lastSeen) < 30; 
-                globalDevices.push(d);
-                
-                totalCount++; 
-                if (d.isOnline) onlineCount++; 
-                if (d.targetFirmware) otaCount++;
-                
-                // Trigger heartbeat visual logic if the ping timestamp has shifted
-                if (d.lastSeen) {
-                    const prevSeen = previousLastSeenMap[d.id];
-                    if (prevSeen !== d.lastSeen) {
-                        previousLastSeenMap[d.id] = d.lastSeen;
-                        
-                        // Safety Gate: Prevent historical data from flooding the log upon first page initialization
-                        if ((nowSecs - d.lastSeen) < 15) {
-                            window.heartbeatOps.logPing(d.deviceName || d.id, d.lastSeen);
-                        }
-                    }
-                }
-            });
-            
-            // Re-render Dashboard Top Stats via DOM update
-            document.getElementById('s-total').innerText = totalCount;
-            document.getElementById('s-online').innerText = onlineCount;
-            document.getElementById('s-ota').innerText = otaCount;
-            
-            // Invoke sub-renders dependent on device states
-            window.renderDevices();
-            if (window.updateCharts) {
-                window.updateCharts();
-            }
-        });
-
-        /**
-         * Reconstructs the grid of hardware cards based on the active dataset array and selected filter.
-         */
-        window.renderDevices = () => {
-            const grid = document.getElementById('deviceGrid'); 
-            grid.innerHTML = '';
-            
-            const nowSecs = Math.floor(Date.now() / 1000);
-            
-            // Execute filter selection pipeline
-            let filtered = globalDevices.filter(d => {
-                if (window.currentDeviceFilter === 'online') return d.isOnline;
-                if (window.currentDeviceFilter === 'offline') return !d.isOnline;
-                return true;
-            });
-
-            // Handle empty state rendering
-            if (filtered.length === 0) { 
-                grid.innerHTML = `<div style="color:var(--text-muted); padding: 20px;">No nodes match the current filter parameters.</div>`; 
-                return; 
-            }
-            
-            filtered.forEach(d => {
-                let seen = "Never"; 
-                let up = "N/A";
-                
-                // Calculate human readable Last Seen difference
-                if (d.lastSeen) { 
-                    let diff = nowSecs - d.lastSeen; 
-                    seen = diff < 60 ? `${diff}s ago` : `${Math.floor(diff/60)}m ago`; 
-                }
-                
-                // Calculate human readable Hardware Uptime
-                if (d.uptime) { 
-                    up = d.uptime < 60 ? `${d.uptime}s` : `${Math.floor(d.uptime/3600)}h ${Math.floor((d.uptime%3600)/60)}m`; 
-                }
-                
-                // Calculate Wi-Fi Signal visual warning colors based on decibel limits
-                const rssi = d.rssi || 0; 
-                let sigCol = rssi > -60 ? "var(--neon-green)" : rssi > -80 ? "#ffb86c" : "var(--neon-red)";
-                
-                // Dynamically compile the OTA firmware dropdown utilizing global array
-                let selectHtml = `<select id="ota_${window.ui.escapeHTML(d.id)}" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); color:white; border:1px solid var(--panel-border); border-radius:6px; margin-bottom:15px;"><option value="">Select Firmware from Vault...</option>`;
-                if (window.globalFirmware) {
-                    window.globalFirmware.forEach(f => { 
-                        selectHtml += `<option value="${window.ui.escapeHTML(f.url)}">${window.ui.escapeHTML(f.name)}</option>`; 
-                    });
-                }
-                selectHtml += `</select>`;
-
-                // Use robust fallback string if specific device name is deleted
-                const cleanName = d.deviceName || d.id;
-                
-                // Generate completely sanitized HTML strings to prevent script injection
-                const safeHTMLName = window.ui.escapeHTML(cleanName);
-                
-                // Extremely strict string escaping for injection into inline HTML onclick events
-                // Replaces slashes, quotes, and apostrophes to protect the execution string.
-                const safeNameForJS = window.ui.escapeJS(cleanName);
-                const safeIdForJS = window.ui.escapeJS(d.id);
-
-                const card = document.createElement('div'); 
-                card.className = `card ${d.isOnline ? '' : 'offline'}`;
-                
-                // Inject full Card component blueprint
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; flex-wrap:wrap; gap:10px;">
-                        <div>
-                            <strong style="font-size:1.3rem; color:var(--text-main);">${safeHTMLName}</strong>
-                            <div style="font-size:0.8rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:5px;">ID: ${window.ui.escapeHTML(d.id)}</div>
-                        </div>
-                        <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; color:${d.isOnline ? 'var(--neon-green)' : 'var(--neon-red)'}">
-                            <div class="status-dot"></div>${d.isOnline ? 'ONLINE' : 'OFFLINE'}
-                        </div>
-                    </div>
-                    
-                    <div class="meta-row"><span>Architecture</span><span style="color:var(--neon-cyan); font-weight:bold;">${window.ui.escapeHTML(d.boardType || 'ESP32')}</span></div>
-                    <div class="meta-row"><span>Wi-Fi Signal</span><span style="color:${sigCol}; font-weight:bold;">${rssi} dBm</span></div>
-                    <div class="meta-row"><span>Free Heap RAM</span><span style="color:var(--neon-yellow);">${d.heap ? Math.round(d.heap/1024)+' KB' : 'N/A'}</span></div>
-                    <div class="meta-row"><span>System Uptime</span><span>${up}</span></div>
-                    <div class="meta-row" style="margin-bottom:20px;"><span>Last Heartbeat</span><span>${seen}</span></div>
-                    
-                    <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
-                        ${selectHtml}
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button class="btn btn-primary" style="flex:1;" onclick="window.dbOps.sendOTA('${safeIdForJS}')" ${d.isOnline?'':'disabled'}>🚀 OTA</button>
-                            <button class="btn btn-purple" style="flex:1;" onclick="window.dbOps.openCtrl('${safeIdForJS}', '${safeNameForJS}')" ${d.isOnline?'':'disabled'}>💻 Console</button>
-                            <button class="btn btn-secondary" style="flex:1;" onclick="window.dbOps.openRename('${safeIdForJS}', '${safeNameForJS}')">⚙️ Edit</button>
-                        </div>
-                    </div>`;
-                    
-                grid.appendChild(card);
-            });
-        };
-
-        // ==========================================
-        // 2. FIRMWARE VAULT SYNC PROTOCOL
-        // ==========================================
-        window.globalFirmware = [];
+        const pStart = document.getElementById('pomoStart');
+        const pPause = document.getElementById('pomoPause');
+        const pSkip = document.getElementById('pomoSkip');
+        const pStat = document.getElementById('pomoStatus');
         
-        onSnapshot(collection(db, "firmware"), (snap) => {
-            window.globalFirmware = []; 
-            const list = document.getElementById('vaultList'); 
-            list.innerHTML = '';
-            
-            if (snap.empty) { 
-                list.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Vault is empty. Upload a binary above to proceed.</div>'; 
-                return; 
-            }
-            
-            snap.forEach(d => {
-                const data = d.data(); 
-                data.id = d.id; 
-                window.globalFirmware.push(data);
-                
-                // Safe string mappings for Firebase deletions (escapes slashes and quotes for Javascript injection)
-                const safeIdJS = window.ui.escapeJS(data.id);
-                const safeNameJS = window.ui.escapeJS(data.name);
-                const safePathJS = window.ui.escapeJS(data.path || '');
-                const safeUrlJS = window.ui.escapeJS(data.url);
-                
-                list.innerHTML += `
-                    <div style="background:var(--panel-bg); border:1px solid var(--panel-border); padding:20px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
-                        <div>
-                            <strong style="color:var(--neon-cyan); font-size:1.2rem;">${window.ui.escapeHTML(data.name)}</strong><br>
-                            <span style="font-size:0.85rem; color:var(--text-muted); font-family:var(--font-mono);">${new Date(data.uploadedAt).toLocaleString()} | Size: ~${Math.round(data.size/1024)} KB</span>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${safeUrlJS}'); window.ui.toast('URL Copied', 'success');">Copy Link</button>
-                            <button class="btn btn-danger" onclick="window.dbOps.delFw('${safeIdJS}', '${safeNameJS}', '${safePathJS}')">Delete</button>
-                        </div>
-                    </div>`;
-            });
-            
-            // Force a re-render of device cards to update their OTA select dropdowns
-            if (window.renderDevices) {
-                window.renderDevices(); 
-            }
-        });
-
-        // ==========================================
-        // 3. CLOUD IDE FIRESTORE SYNC LOGIC
-        // ==========================================
-        onSnapshot(collection(db, "sketches"), (snap) => {
-            const list = document.getElementById('sketchList'); 
-            list.innerHTML = '';
-            
-            snap.forEach(d => {
-                const data = d.data(); 
-                const isActive = window.currentSketchId === d.id ? 'active' : '';
-                
-                const safeIdJS = window.ui.escapeJS(d.id);
-                const safeNameHTML = window.ui.escapeHTML(data.name);
-                const safeNameJS = window.ui.escapeJS(data.name);
-                
-                // Appends a file object to the lateral UI explorer containing the native Delete feature
-                list.innerHTML += `
-                    <div class="file-item ${isActive}">
-                        <span style="flex-grow: 1;" onclick="window.ideOps.loadSketch('${safeIdJS}', '${safeNameJS}')">📄 ${safeNameHTML}</span>
-                        <span style="color: var(--neon-red); font-weight: bold; padding: 0 5px;" onclick="window.ideOps.deleteSketch('${safeIdJS}', '${safeNameJS}', event)">×</span>
-                    </div>`;
-            });
-        });
-
-        // ==========================================
-        // 4. GLOBAL CLOUD IDE DISPATCHER
-        // ==========================================
-        window.ideOps = {
-            log: (msg, color="#ccc") => {
-                const term = document.getElementById('ideTerm');
-                term.innerHTML += `<div class="term-line" style="color:${color};">> ${window.ui.escapeHTML(msg)}</div>`;
-                term.scrollTop = term.scrollHeight;
-            },
-            
-            createSketch: async () => {
-                const name = document.getElementById('newSketchName').value;
-                if (!name) return window.ui.toast("Enter filename", "error");
-                
-                try {
-                    const id = "file_" + Date.now();
-                    await setDoc(doc(db, "sketches", id), { 
-                        name: name + ".ino", 
-                        code: "// "+name+"\n\nvoid setup() {\n  \n}\n\nvoid loop() {\n  \n}" 
-                    });
-                    
-                    document.getElementById('newSketchName').value = '';
-                    window.ui.toast("File Created", "success");
-                    window.sysLog("IDE FILE CREATE", `Created sketch: ${name}.ino`);
-                } catch(e) {
-                    window.ui.toast("Failed to create file.", "error");
-                }
-            },
-            
-            loadSketch: async (id, name) => {
-                try {
-                    const docSnap = await getDoc(doc(db, "sketches", id));
-                    if (docSnap.exists()) {
-                        
-                        // Safety Gate: Ensure Monaco is loaded before trying to set value
-                        if (!window.editor) {
-                            return window.ui.toast("Editor is still initializing, please wait.", "warning");
-                        }
-                        
-                        window.editor.setValue(docSnap.data().code);
-                        window.currentSketchId = id;
-                        document.getElementById('currentSketchTab').innerText = name;
-                        
-                        // Highlight sidebar item
-                        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
-                        if (event && event.currentTarget) {
-                            event.currentTarget.closest('.file-item').classList.add('active');
-                        }
-                        
-                        window.ui.toast("Loaded " + name, "success");
-                    }
-                } catch(e) {
-                    window.ui.toast("Failed to load sketch.", "error");
-                }
-            },
-            
-            saveSketch: async () => {
-                if (!window.currentSketchId) {
-                    return window.ui.toast("Create or load a file first", "error");
-                }
-                
-                if (!window.editor) return;
-                
-                try {
-                    await updateDoc(doc(db, "sketches", window.currentSketchId), { 
-                        code: window.editor.getValue() 
-                    });
-                    
-                    window.ui.toast("Saved to Cloud DB", "success");
-                    window.sysLog("IDE FILE SAVE", `Saved sketch ID: ${window.currentSketchId}`);
-                } catch(e) {
-                    window.ui.toast("Failed to save sketch.", "error");
-                }
-            },
-
-            deleteSketch: async (id, name, event) => {
-                if(event) event.stopPropagation();
-                
-                if (confirm(`Permanently delete the sketch: ${name}?`)) {
-                    try {
-                        await deleteDoc(doc(db, "sketches", id));
-                        
-                        if (window.currentSketchId === id && window.editor) {
-                            window.editor.setValue('// File deleted.\n');
-                            window.currentSketchId = null;
-                            document.getElementById('currentSketchTab').innerText = 'untitled.ino';
-                        }
-                        
-                        window.ui.toast("Sketch deleted", "info");
-                        window.sysLog("IDE FILE DELETE", `Deleted sketch: ${name}`);
-                    } catch(e) {
-                        window.ui.toast("Failed to delete sketch.", "error");
-                    }
-                }
-            },
-            
-            compile: () => {
-                document.getElementById('ideTerm').innerHTML = '<div class="term-line term-sys">DBP Cloud Architecture OS [Version 3.1.0]</div>';
-                window.ideOps.log("Initiating Cloud Build Pipeline...", "#0cf3a2");
-                
-                setTimeout(() => window.ideOps.log("[SYSTEM] Scanning C++ syntax...", "#fff"), 800);
-                setTimeout(() => {
-                    window.ideOps.log("[SECURITY] Mandatory OTA Wrapper Injection Triggered.", "var(--neon-purple)");
-                    window.ideOps.log("[INJECT] Adding #include <DBP_Cloud.h>", "var(--neon-purple)");
-                    window.ideOps.log("[INJECT] Injecting DBP.begin() into setup()...", "var(--neon-purple)");
-                    window.ideOps.log("[INJECT] Injecting DBP.handle() into loop()...", "var(--neon-purple)");
-                }, 1500);
-                
-                setTimeout(() => window.ideOps.log("Linking compiled objects...", "#fff"), 3000);
-                setTimeout(() => {
-                    window.ideOps.log("ERROR: Cloud Compilation Server Unreachable.", "var(--neon-red)");
-                    window.ideOps.log("This dashboard is currently running in 'Static Client Mode'.", "var(--neon-yellow)");
-                    window.ideOps.log("ACTION REQUIRED: Copy the code from the editor, paste it into your local Arduino IDE, compile to a .bin file, and upload via the Firmware Vault tab.", "#fff");
-                    window.ui.toast("Build Server Offline", "warning");
-                }, 4500);
-            }
-        };
-
-        // ==========================================
-        // 5. GLOBAL DATABASE OPERATIONS DISPATCHER
-        // ==========================================
-        window.dbOps = {
-            
-            /**
-             * Manufactures a randomized token block and allocates a database sector for a new board.
-             */
-            register: async () => {
-                try {
-                    const id = 'dbp-node-' + Math.floor(Math.random()*10000) + '-' + Math.floor(Math.random()*1000);
-                    const name = document.getElementById('regDeviceName').value || 'Unnamed Node';
-                    
-                    await setDoc(doc(db, "devices", id), { 
-                        deviceName: name, 
-                        boardType: document.getElementById('regBoardType').value, 
-                        status: "offline", 
-                        rebootFlag: false, 
-                        command: "", 
-                        targetFirmware: "",
-                        lastSeen: 0 
-                    });
-                    
-                    window.ui.closeModals(); 
-                    window.ui.toast(`Token Secured: ${id}`, "success"); 
-                    window.sysLog("HARDWARE REGISTERED", `Token generated for: ${name}`);
-                } catch (e) {
-                    window.ui.toast("Registration failed. Check network.", "error");
-                }
-            },
-            
-            /**
-             * Activates the UI Modal for updating Node identifiers
-             */
-            openRename: (id, currentName) => {
-                document.getElementById('renameDeviceId').value = id;
-                document.getElementById('newDeviceNameInput').value = currentName;
-                document.getElementById('renameModal').style.display = 'flex';
-            },
-            
-            /**
-             * Commits identifier mutations to Firestore
-             */
-            saveRename: async () => {
-                try {
-                    const id = document.getElementById('renameDeviceId').value;
-                    const newName = document.getElementById('newDeviceNameInput').value;
-                    if (!newName) return window.ui.toast("Name cannot be empty.", "error");
-                    
-                    await updateDoc(doc(db, "devices", id), { deviceName: newName });
-                    
-                    window.ui.closeModals(); 
-                    window.ui.toast("Node renamed successfully.", "success");
-                    window.sysLog("NODE RENAMED", `ID: ${id} changed to ${newName}`);
-                } catch(e) {
-                    window.ui.toast("Failed to rename device.", "error");
-                }
-            },
-            
-            /**
-             * Permanently destructs the document link mapping to a physical board.
-             */
-            deleteDevice: async () => {
-                try {
-                    const id = document.getElementById('renameDeviceId').value;
-                    if (confirm("DANGER: Permanently delete this node from the database? This will sever OTA connections.")) {
-                        await deleteDoc(doc(db, "devices", id));
-                        
-                        window.ui.closeModals(); 
-                        window.ui.toast("Node permanently deleted.", "info");
-                        window.sysLog("NODE DELETED", `Deleted Node ID: ${id}`);
-                    }
-                } catch(e) {
-                    window.ui.toast("Failed to delete device.", "error");
-                }
-            },
-            
-            /**
-             * Triggers the Command Console Modal and sets hidden input targets
-             */
-            openCtrl: (id, name) => { 
-                document.getElementById('ctrlDeviceId').value = id; 
-                document.getElementById('ctrlTargetName').innerText = name; 
-                document.getElementById('controlModal').style.display = 'flex'; 
-            },
-            
-            /**
-             * Triggers the boolean flag forcing a hardware reboot loop on the ESP32
-             */
-            reboot: async () => { 
-                if (confirm("WARNING: This will power cycle the physical hardware. Proceed?")) { 
-                    try {
-                        const id = document.getElementById('ctrlDeviceId').value; 
-                        await updateDoc(doc(db, "devices", id), { rebootFlag: true }); 
-                        
-                        window.ui.closeModals(); 
-                        window.ui.toast("Hardware Reboot Command Sent", "warning"); 
-                        window.sysLog("REMOTE REBOOT", `Triggered on Node ID: ${id}`); 
-                    } catch(e) {
-                        window.ui.toast("Command failed to send.", "error");
-                    }
-                } 
-            },
-            
-            /**
-             * Injects a raw string payload into the target device's Firestore document
-             */
-            sendCommand: async () => { 
-                try {
-                    const cmd = document.getElementById('ctrlCommand').value; 
-                    if (!cmd) return; 
-                    
-                    const id = document.getElementById('ctrlDeviceId').value; 
-                    await updateDoc(doc(db, "devices", id), { command: cmd }); 
-                    
-                    document.getElementById('ctrlCommand').value = ''; 
-                    window.ui.toast("Payload injected to C++ loop.", "success"); 
-                    window.sysLog("COMMAND INJECTED", `Sent payload '${cmd}' to Node ID: ${id}`); 
-                } catch (e) {
-                    window.ui.toast("Command injection failed.", "error");
-                }
-            },
-            
-            /**
-             * Transmits the specific download URL of a binary to trigger an ESP32 firmware flash
-             */
-            sendOTA: async (id) => { 
-                try {
-                    const url = document.getElementById(`ota_${id}`).value; 
-                    if (!url) { 
-                        return window.ui.toast("Select a binary from the dropdown first.", "error"); 
-                    } 
-                    if (confirm("Initiate Over-The-Air deployment? Device will flash and reboot.")) { 
-                        await updateDoc(doc(db, "devices", id), { targetFirmware: url }); 
-                        
-                        window.ui.toast("OTA Deployment Initiated.", "success"); 
-                        window.sysLog("OTA PUSHED", `Deployed new firmware URL to Node ID: ${id}`); 
-                    } 
-                } catch(e) {
-                    window.ui.toast("OTA Execution Failed.", "error");
-                }
-            },
-            
-            /**
-             * Safely Destructs binary from Cloud Storage and its linked Firestore document metadata
-             * @param {string} docId - The Firestore Document ID
-             * @param {string} name - The readable filename
-             * @param {string} path - The physical storage bucket path
-             */
-            delFw: async (docId, name, path) => { 
-                if (confirm(`Permanently delete the binary '${name}' from Cloud Vault?`)) { 
-                    try {
-                        // Priority 1: Wipe logical reference from Firestore first.
-                        // If this succeeds, the file is functionally removed from the system.
-                        await deleteDoc(doc(db, "firmware", docId)); 
-                        
-                        // Priority 2: Scrub physical asset from bucket storage
-                        // Safe check ensures we don't pass an undefined path which would crash Firebase Storage
-                        if (path && path !== 'undefined' && path.trim() !== '') {
-                            await deleteObject(ref(storage, path));
-                        }
-                        
-                        window.ui.toast("Binary deleted successfully.", "info"); 
-                        window.sysLog("VAULT DELETE", `Deleted binary: ${name}`); 
-                    } catch(e) {
-                        console.error(e);
-                        // Failsafe notification to the user
-                        window.ui.toast("Logical delete succeeded. Physical file delete encountered error.", "warning");
-                    }
-                } 
-            }
-        };
-
-        // ==========================================
-        // 6. CLOUD STORAGE UPLOADER ENGINE
-        // ==========================================
-        const fwInput = document.getElementById('fwInput');
+        if(pStart) pStart.style.display = 'none'; 
+        if(pPause) pPause.style.display = 'block'; 
+        if(pSkip) pSkip.style.display = 'block';
+        if(progressRing) progressRing.classList.add('active'); 
         
-        fwInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0]; 
-            if (!file) return;
-            
-            // Hard check for validity to prevent storage ballooning with invalid assets
-            if (!file.name.endsWith('.bin')) {
-                // Clear the input so the user can try again immediately
-                fwInput.value = '';
-                return window.ui.toast("Only compiled .bin files allowed.", "error");
-            }
-            
-            const up = document.getElementById('fwProgress'); 
-            up.innerText = "Encrypting & Uploading Binary...";
-            
-            // Define unique bucket path for Firebase Storage
-            const storagePath = 'firmware/' + Date.now() + '_' + file.name;
-            const storageRef = ref(storage, storagePath);
-            
-            // Initiate byte stream payload
-            const task = uploadBytesResumable(storageRef, file);
-            
-            task.on('state_changed', 
-                (snap) => { 
-                    // Calculate visual progress percentage during data stream
-                    const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100); 
-                    up.innerText = `Uploading to Server: ${progress}%`; 
-                }, 
-                (err) => { 
-                    window.ui.toast("Upload Failed. Check network connection.", "error"); 
-                    up.innerText = ''; 
-                    fwInput.value = '';
-                }, 
-                async () => {
-                    try {
-                        const url = await getDownloadURL(task.snapshot.ref);
-                        
-                        // Secure logical mapping in Firestore database containing the physical path
-                        await setDoc(doc(db, "firmware", Date.now().toString()), { 
-                            name: file.name, 
-                            url: url, 
-                            path: storagePath,
-                            uploadedAt: Date.now(), 
-                            size: file.size 
-                        });
-                        
-                        up.innerText = "Vault Secured!"; 
-                        setTimeout(() => { up.innerText = ''; }, 3000); 
-                        
-                        window.ui.toast("Firmware Secured in Vault", "success"); 
-                        window.sysLog("VAULT UPLOAD", `Secured new binary: ${file.name}`); 
-                    } catch(e) {
-                        window.ui.toast("Error finalizing upload record.", "error");
-                    } finally {
-                        // Reset input file array so the exact same file can be uploaded again if needed
-                        fwInput.value = '';
-                    }
-                }
-            );
-        });
-
-        // ==========================================
-        // 7. CHART.JS ANALYTICS DATA BINDING
-        // ==========================================
-        let chartRssi = null; 
-        let chartHeap = null;
+        const ft = document.getElementById('focusTask');
+        const task = ft ? (ft.value || (currentTimerMode === 'work' ? "Deep Work" : "Resting")) : "Active"; 
+        if(pStat) pStat.textContent = `Active: ${task}`;
         
-        /**
-         * Initializes the Canvas context engines for data visualization.
-         */
-        window.renderCharts = () => {
-            // Memory Protection: Prevent re-rendering multiple times if user spams the tab
-            if (chartRssi) return; 
-            
-            Chart.defaults.color = '#8b9bb4'; 
-            Chart.defaults.font.family = "'SF Pro Display', sans-serif";
-            
-            // Instantiate Signal Strength Bar Chart
-            const ctxRssi = document.getElementById('rssiChart').getContext('2d');
-            chartRssi = new Chart(ctxRssi, { 
-                type: 'bar', 
-                data: { 
-                    labels: [], 
-                    datasets: [{ 
-                        label: 'Signal Strength (dBm)', 
-                        data: [], 
-                        backgroundColor: '#0cf3a2', 
-                        borderRadius: 4 
-                    }] 
-                }, 
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { y: { min: -100, max: 0 } } 
-                } 
-            });
-            
-            // Instantiate RAM Profiling Doughnut Chart
-            const ctxHeap = document.getElementById('heapChart').getContext('2d');
-            chartHeap = new Chart(ctxHeap, { 
-                type: 'doughnut', 
-                data: { 
-                    labels: [], 
-                    datasets: [{ 
-                        data: [], 
-                        backgroundColor: ['#bc13fe', '#0cf3a2', '#ff3366', '#f1c40f', '#00f2fe'], 
-                        borderWidth: 0 
-                    }] 
-                }, 
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '70%', 
-                    plugins: { legend: { position: 'right' } } 
-                } 
-            });
-            
-            window.updateCharts();
-        };
+        let lastTick = performance.now();
+        function tick() {
+            const now = performance.now();
+            if(now - lastTick >= 1000) {
+                timerSecondsLeft--; updateTimerDisplay(); lastTick = now;
+                if(timerSecondsLeft <= 0) { endPhase(); return; }
+            }
+            timerInterval = requestAnimationFrame(tick);
+        }
+        timerInterval = requestAnimationFrame(tick);
+    });
+}
 
-        /**
-         * Rebinds dataset definitions based on live Firebase snapshot events to asynchronously redraw canvas.
-         */
-        window.updateCharts = () => {
-            // Guard clause to ensure chart contexts exist before attempting data injection
-            if (!chartRssi || !chartHeap) return;
-            
-            // Filter for only active nodes to prevent offline nodes from skewing the active RAM telemetry
-            const onlineDevs = globalDevices.filter(d => d.isOnline);
-            
-            // Map the sanitized names to the X-Axis array
-            chartRssi.data.labels = onlineDevs.map(d => d.deviceName || d.id);
-            chartRssi.data.datasets[0].data = onlineDevs.map(d => d.rssi || 0);
-            
-            // Dynamic thematic coloring for bar chart depending on dbm performance ranges
-            chartRssi.data.datasets[0].backgroundColor = onlineDevs.map(d => 
-                (d.rssi || 0) > -60 ? '#0cf3a2' : (d.rssi || 0) > -80 ? '#f1c40f' : '#ff3366'
-            );
-            chartRssi.update();
-            
-            // Map the active memory values to the Doughnut slices (Dividing by 1024 to convert Bytes to KB)
-            chartHeap.data.labels = onlineDevs.map(d => d.deviceName || d.id);
-            chartHeap.data.datasets[0].data = onlineDevs.map(d => Math.round((d.heap || 0)/1024));
-            chartHeap.update();
-        };
-    </script>
+const pomoPause = document.getElementById('pomoPause');
+if(pomoPause) pomoPause.addEventListener('click', () => { cancelAnimationFrame(timerInterval); timerInterval = null; if(progressRing) progressRing.classList.remove('active'); const ps = document.getElementById('pomoStart'); const pp = document.getElementById('pomoPause'); const psk = document.getElementById('pomoSkip'); const pst = document.getElementById('pomoStatus'); if(ps) ps.style.display = 'block'; if(pp) pp.style.display = 'none'; if(psk) psk.style.display = 'none'; if(pst) pst.textContent = "Paused"; document.title = ORIGINAL_TITLE; });
+
+const pomoSkip = document.getElementById('pomoSkip');
+if(pomoSkip) pomoSkip.addEventListener('click', () => { if(confirm("Skip this phase?")) endPhase(); });
+
+const pomoReset = document.getElementById('pomoReset');
+if(pomoReset) pomoReset.addEventListener('click', () => { cancelAnimationFrame(timerInterval); timerInterval = null; if(progressRing) progressRing.classList.remove('active'); timerSecondsLeft = timerTotalSeconds; const ps = document.getElementById('pomoStart'); const pp = document.getElementById('pomoPause'); const psk = document.getElementById('pomoSkip'); const pst = document.getElementById('pomoStatus'); if(ps) ps.style.display = 'block'; if(pp) pp.style.display = 'none'; if(psk) psk.style.display = 'none'; if(pst) pst.textContent = "Ready"; updateTimerDisplay(); });
+
+const pomoVol = document.getElementById('pomoVol');
+if(pomoVol) {
+    pomoVol.addEventListener('click', (e) => {
+        soundEnabled = !soundEnabled; const btn = e.currentTarget;
+        if(soundEnabled) { btn.classList.remove('muted'); btn.textContent = '🔊'; } else { btn.classList.add('muted'); btn.textContent = '🔇'; }
+    });
+}
+
+// --- 8. MULTI-TAB NOTES ---
+const textNote = document.getElementById('notesTextarea');
+function initNotes() { 
+    if(!textNote) return;
+    if(typeof notesData === 'string') notesData = { main: notesData, work: '', ideas: '' }; 
+    textNote.value = notesData[currentNoteTab] || ''; updateNotesCounter(); 
+}
+document.querySelectorAll('.note-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+        if(!textNote) return;
+        notesData[currentNoteTab] = textNote.value; document.querySelectorAll('.note-tab').forEach(t => t.classList.remove('active')); e.target.classList.add('active');
+        currentNoteTab = e.target.dataset.tab; textNote.value = notesData[currentNoteTab] || ''; localStorage.setItem(KEYS.notes, JSON.stringify(notesData)); updateNotesCounter();
+    });
+});
+if(textNote) textNote.addEventListener('input', () => { notesData[currentNoteTab] = textNote.value; localStorage.setItem(KEYS.notes, JSON.stringify(notesData)); updateNotesCounter(); });
+
+function updateNotesCounter() {
+    if(!textNote) return;
+    const text = textNote.value; const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const nc = document.getElementById('notesCounter'); if(nc) nc.textContent = `${words} words • ${text.length} chars`;
+    const ns = document.getElementById('notesStatus'); if(ns) { ns.textContent = "Auto-saved."; setTimeout(() => ns.textContent = "", 2000); }
+}
+
+const clearNotesBtn = document.getElementById('clearNotesBtn');
+if(clearNotesBtn) clearNotesBtn.addEventListener('click', () => { if(confirm('Clear this tab?')) { if(textNote) textNote.value = ''; notesData[currentNoteTab] = ''; localStorage.setItem(KEYS.notes, JSON.stringify(notesData)); updateNotesCounter(); }});
+
+const copyNotesBtn = document.getElementById('copyNotesBtn');
+if(copyNotesBtn) copyNotesBtn.addEventListener('click', () => { if(textNote) { navigator.clipboard.writeText(textNote.value); showToast('Notes copied! 📋'); } });
+
+// --- 9. UTILS, MODALS & GLOBAL SHORTCUTS ---
+function updateClock() { 
+    try {
+        const now = new Date(); 
+        const timeStr = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true});
+        const dateStr = now.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+        
+        const ct = document.getElementById('clockTime');
+        const cd = document.getElementById('clockDate');
+        
+        if(ct) ct.textContent = timeStr;
+        if(cd) cd.textContent = dateStr;
+    } catch(e) {
+        console.error("Clock update error:", e);
+    }
+}
+
+function showToast(msg, isError=false) { const t = document.getElementById('toast'); if(!t) return; const tm = document.getElementById('toastMessage'); if(tm) tm.textContent = msg; t.style.borderColor = isError ? 'var(--danger)' : 'var(--border-highlight)'; t.classList.add('active'); setTimeout(() => t.classList.remove('active'), 3000); }
+function showModal(content) { const m = document.getElementById('modal'); const mo = document.getElementById('modalOverlay'); if(m && mo) { m.innerHTML = content; mo.classList.add('active'); } }
+function hideModal() { const mo = document.getElementById('modalOverlay'); if(mo) mo.classList.remove('active'); }
+const modalOverlay = document.getElementById('modalOverlay');
+if(modalOverlay) modalOverlay.addEventListener('click', (e) => { if(e.target.id === 'modalOverlay') hideModal(); });
+
+document.addEventListener('keydown', (e) => {
+    const activeTag = document.activeElement.tagName;
+    const inInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+    
+    if(e.ctrlKey && e.key === 'k') { e.preventDefault(); const sb = document.getElementById('searchBar'); if(sb) sb.focus(); }
+    if(e.altKey && e.key === 'n') { e.preventDefault(); const na = document.getElementById('notesAnchor'); if(na) na.scrollIntoView({behavior:'smooth'}); setTimeout(()=> { if(textNote) textNote.focus(); }, 500); }
+    if(e.key === 'Escape') { hideModal(); document.activeElement.blur(); const sg = document.getElementById('suggestions'); if(sg) sg.style.display='none'; }
+
+    // Hotbar trigger: 1-9
+    if ((e.key >= '1' && e.key <= '9')) {
+        const slotIndex = parseInt(e.key) - 1;
+        if ((!inInput && !e.ctrlKey && !e.altKey && !e.metaKey) || e.ctrlKey || e.altKey) {
+            if(hotbar[slotIndex]) {
+                if(e.ctrlKey) e.preventDefault(); 
+                window.open(hotbar[slotIndex].url, '_blank');
+                const slot = document.querySelectorAll('.hotbar-slot')[slotIndex];
+                if(slot) { slot.style.transform = 'scale(0.9)'; setTimeout(()=> slot.style.transform = '', 150); }
+            }
+        }
+    }
+});
+
+const shortcutsBtn = document.getElementById('shortcutsBtn');
+if(shortcutsBtn) shortcutsBtn.addEventListener('click', () => {
+    showModal(`<h3 style="text-align:center; margin-bottom: 24px;">⌨️ Command Shortcuts</h3><table style="width:100%; text-align:left; border-collapse:collapse; font-size:16px;">
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:16px 0;"><span style="background:var(--card-hover); padding:8px 12px; border-radius:8px; color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight: 800;">Ctrl + K</span></td><td style="font-weight:600;">Global Search</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:16px 0;"><span style="background:var(--card-hover); padding:8px 12px; border-radius:8px; color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight: 800;">Alt + N</span></td><td style="font-weight:600;">Quick Scratchpad</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:16px 0;"><span style="background:var(--card-hover); padding:8px 12px; border-radius:8px; color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight: 800;">1 - 9</span></td><td style="font-weight:600;">Launch Hotbar Slot</td></tr>
+        <tr><td style="padding:16px 0;"><span style="background:var(--card-hover); padding:8px 12px; border-radius:8px; color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight: 800;">Drag & Drop</span></td><td style="font-weight:600;">Reorganize / Pin to Hotbar</td></tr>
+    </table><div class="modal-actions"><button class="modal-btn primary ripple-target" onclick="hideModal()">Understood</button></div>`);
+});
+
+// Auth
+const unlockBtn = document.getElementById('unlockBtn');
+if(unlockBtn) unlockBtn.addEventListener('click', () => { 
+    const pi = document.getElementById('passwordInput');
+    if(pi && pi.value === DEFAULT_PASS) { 
+        localStorage.setItem(KEYS.unlock, 'true'); 
+        const ps = document.getElementById('passwordScreen');
+        if(ps) {
+            ps.style.opacity = '0'; 
+            setTimeout(() => ps.style.display = 'none', 400); 
+        }
+    } else { alert("Access Denied"); } 
+});
+
+const previewBtn = document.getElementById('previewBtn');
+if(previewBtn) previewBtn.addEventListener('click', () => { 
+    const ps = document.getElementById('passwordScreen');
+    if(ps) {
+        ps.style.opacity = '0'; 
+        setTimeout(() => ps.style.display = 'none', 400); 
+    }
+});
+
+const pi = document.getElementById('passwordInput');
+if(pi) pi.addEventListener('keypress', (e) => { if(e.key === 'Enter') { const ub = document.getElementById('unlockBtn'); if(ub) ub.click(); } });
+
+// --- 10. CONFIG MANAGEMENT & MIGRATION IMPORT ---
+const addLinkBtn = document.getElementById('addLinkBtn');
+if(addLinkBtn) addLinkBtn.addEventListener('click', () => {
+    const opts = Object.keys(links).map(s => `<option value="${s}">${s.replace('_', ' ').toUpperCase()}</option>`).join('');
+    showModal(`<h3 style="text-align:center; margin-bottom:24px;">➕ Add Link</h3><input type="text" class="modal-input" id="inpLabel" placeholder="Label (e.g. GitHub)"><input type="url" class="modal-input" id="inpUrl" placeholder="URL (e.g. https://github.com)"><div style="display:flex; gap:16px;"><input type="text" class="modal-input" id="inpIcon" placeholder="Emoji 🐙" maxlength="2" style="width:120px;"><input type="text" class="modal-input" id="inpTags" placeholder="Tags (comma separated)"></div><select class="modal-input" id="inpSection">${opts}<option value="_new">+ Create New Category</option></select><input type="text" class="modal-input" id="inpNewSection" placeholder="New Category Name" style="display:none; margin-top:-10px;"><div class="modal-actions"><button class="modal-btn secondary ripple-target" onclick="hideModal()">Cancel</button><button class="modal-btn primary ripple-target" onclick="processAddLink()">Add to Dashboard</button></div>`);
+    const is = document.getElementById('inpSection');
+    if(is) is.addEventListener('change', (e) => { const ins = document.getElementById('inpNewSection'); if(ins) ins.style.display = e.target.value === '_new' ? 'block' : 'none'; });
+});
+
+window.processAddLink = function() {
+    const label = document.getElementById('inpLabel').value.trim(); let url = document.getElementById('inpUrl').value.trim(); const icon = document.getElementById('inpIcon').value.trim() || '🔗'; const tags = document.getElementById('inpTags').value.split(',').map(t=>t.trim()).filter(Boolean); let section = document.getElementById('inpSection').value;
+    if(!label || !url) return showToast('Name and URL required!', true); if(!url.startsWith('http')) url = 'https://' + url;
+    if(section === '_new') { section = document.getElementById('inpNewSection').value.trim().toLowerCase().replace(/\s+/g, '_'); if(!section) return showToast('Category required', true); if(!links[section]) links[section] = []; }
+    links[section].push({ id: `link_${Date.now()}`, label, url, icon, tags }); saveLinksAndRender(true); hideModal(); showToast('Link added! ✨');
+}
+
+window.openEditModal = function(sec, id) {
+    const link = links[sec].find(l => l.id === id); if(!link) return; const opts = Object.keys(links).map(s => `<option value="${s}" ${s===sec?'selected':''}>${s.replace('_', ' ').toUpperCase()}</option>`).join('');
+    showModal(`<h3 style="text-align:center; margin-bottom:24px;">✏️ Edit Link</h3><input type="text" class="modal-input" id="editLabel" value="${link.label}"><input type="url" class="modal-input" id="editUrl" value="${link.url}"><div style="display:flex; gap:16px;"><input type="text" class="modal-input" id="editIcon" value="${link.icon}" maxlength="2" style="width:120px;"><input type="text" class="modal-input" id="editTags" value="${link.tags.join(', ')}"></div><select class="modal-input" id="editSection">${opts}</select><div class="modal-actions"><button class="modal-btn secondary ripple-target" onclick="hideModal()">Cancel</button><button class="modal-btn primary ripple-target" onclick="processEditLink('${sec}', '${id}')">Save Changes</button></div>`);
+}
+
+window.processEditLink = function(oldSec, id) {
+    const label = document.getElementById('editLabel').value.trim(); const url = document.getElementById('editUrl').value.trim(); const icon = document.getElementById('editIcon').value.trim() || '🔗'; const tags = document.getElementById('editTags').value.split(',').map(t=>t.trim()).filter(Boolean); const newSec = document.getElementById('editSection').value;
+    const linkIndex = links[oldSec].findIndex(l => l.id === id); const updated = { id, label, url, icon, tags };
+    if(oldSec === newSec) links[oldSec][linkIndex] = updated; else { links[oldSec].splice(linkIndex, 1); links[newSec].push(updated); }
+    saveLinksAndRender(true); hideModal(); showToast('Link updated! ✏️');
+}
+
+const exportBtn = document.getElementById('exportBtn');
+if(exportBtn) exportBtn.addEventListener('click', () => {
+    const data = JSON.stringify({ version: 8, links, notesData, sessions: sessionsCompleted, hotbar, theme: localStorage.getItem(KEYS.theme), timerSettings });
+    const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `dbp_system_backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('Config Exported 📤');
+});
+
+const importBtn = document.getElementById('importBtn');
+if(importBtn) importBtn.addEventListener('click', () => {
+    showModal(`
+        <h3 style="text-align:center; margin-bottom:24px;">📥 Import Config</h3>
+        <p style="text-align:center; margin-bottom: 16px; color: var(--muted); font-size:14px;">Upload a JSON file or paste code below.</p>
+        <div style="display:flex; justify-content:center; margin-bottom: 16px;">
+            <input type="file" id="importFileInput" accept=".json" style="display:none;">
+            <button class="action-btn ripple-target" onclick="document.getElementById('importFileInput').click()" style="width:100%; background: var(--card-hover); border: 1px dashed var(--accent);">📁 Browse for JSON File</button>
+        </div>
+        <textarea class="modal-input" id="importArea" style="min-height:180px; font-family:monospace; font-size:12px;" placeholder="Or paste JSON code here..."></textarea>
+        <div class="modal-actions">
+            <button class="modal-btn secondary ripple-target" onclick="hideModal()">Cancel</button>
+            <button class="modal-btn primary ripple-target" onclick="processImport()">Import Data</button>
+        </div>
+    `);
+    const ifi = document.getElementById('importFileInput');
+    if(ifi) ifi.addEventListener('change', function(e) {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader(); reader.onload = function(e) { const ia = document.getElementById('importArea'); if(ia) ia.value = e.target.result; showToast('File loaded! Click Import Data to apply. 📄'); };
+        reader.readAsText(file);
+    });
+});
+
+window.processImport = function() {
+    try { 
+        const ia = document.getElementById('importArea');
+        if(!ia) return;
+        const data = JSON.parse(ia.value); 
+        if(data.links) links = data.links; 
+        if(data.notesData) { notesData = data.notesData; } else if (data.notes && typeof data.notes === 'string') { notesData = { main: data.notes, work: '', ideas: '' }; }
+        if(data.hotbar) hotbar = data.hotbar; 
+        if(data.timerSettings) { timerSettings = data.timerSettings; localStorage.setItem(KEYS.timerSettings, JSON.stringify(timerSettings)); }
+        if(data.sessions !== undefined) { sessionsCompleted = data.sessions; localStorage.setItem(KEYS.sessions, sessionsCompleted); } 
+        if(data.theme) { localStorage.setItem(KEYS.theme, data.theme); initTheme(); }
+        localStorage.setItem(KEYS.notes, JSON.stringify(notesData));
+        saveLinksAndRender(true); initNotes(); initTimer(); hideModal(); showToast('System Updated Successfully! 📥'); 
+    } catch(e) { alert("Invalid JSON configuration string."); }
+}
+
+// Boot System
+init();
+</script>
 </body>
 </html>
